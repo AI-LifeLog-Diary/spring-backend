@@ -1,15 +1,14 @@
-package com.lifelog.diary.config;
+package com.lifelog.diary.client;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.web.reactive.function.client.WebClient;
 
 @Configuration
 public class WebClientConfig {
 
     @Bean
-    public WebClient webClient() {
-        return WebClient.builder()
+    public org.springframework.web.reactive.function.client.WebClient webClient() {
+        return org.springframework.web.reactive.function.client.WebClient.builder()
                 .baseUrl("http://localhost:8000")
                 .build();
     }
