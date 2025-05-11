@@ -3,6 +3,7 @@ package com.lifelog.diary.domain;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.lifelog.diary.domain.enums.AuthProvider;
 import com.lifelog.diary.domain.enums.Gender;
+import com.lifelog.diary.domain.enums.Hobby;
 import com.lifelog.diary.domain.enums.Role;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
@@ -43,6 +44,10 @@ public class User extends BaseCreatedTimeEntity {
     @Enumerated(EnumType.STRING)
     @Column(name = "gender", nullable = false)
     private Gender gender;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "hobby", nullable = false)
+    private Hobby hobby;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "role", nullable = false)

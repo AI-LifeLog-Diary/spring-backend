@@ -38,13 +38,13 @@ public class DialogueChatService {
 
     public Flux<String> streamDialogue(DialogueChatReqDto dialogueChatReqDto) throws Exception {
 
-        User user = userRepository.findById(dialogueChatReqDto.getUser_id())
+        User user = userRepository.findById(dialogueChatReqDto.getUserId())
                 .orElseThrow(() -> new GeneralException(Code.USER_NOT_FOUND, "존재하지 않는 사용자입니다."));
 
         DialogueChatSession session;
 
         // 첫 대화
-        if (dialogueChatReqDto.getUser_input() == null) {
+        if (dialogueChatReqDto.getUserInput() == null) {
             session = DialogueChatSession.createChatSession(user);
             dialogueChatSessionRepository.save(session);
         }
@@ -56,7 +56,7 @@ public class DialogueChatService {
             DialogueChat userChat = DialogueChat.createDialogueChat(
                     user,
                     session,
-                    aesUtil.encrypt(dialogueChatReqDto.getUser_input()),
+                    aesUtil.encrypt(dialogueChatReqDto.getUserInput()),
                     ChatRole.USER
             );
             dialogueChatRepository.save(userChat);
