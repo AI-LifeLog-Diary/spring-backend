@@ -13,7 +13,6 @@ import com.lifelog.diary.repository.DialogueChatRepository;
 import com.lifelog.diary.repository.DialogueChatSessionRepository;
 import com.lifelog.diary.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
-import lombok.SneakyThrows;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
@@ -132,7 +131,7 @@ public class DialogueChatService {
                 .collect(Collectors.toList());
     }
 
-    @SneakyThrows
+
     public DialogueChatMessageResDto getChatDetail(Long userId, Long sessionId, Long cursor, int size) {
         Pageable pageable = PageRequest.of(0, size, Sort.by(Sort.Direction.DESC, "id"));
 
