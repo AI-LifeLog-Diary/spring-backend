@@ -28,6 +28,11 @@ public class GPTService {
         - 문어체, 일기체로 작성
         - 중복 없이 자연스럽게 연결
         - 3~5문장 정도로 작성
+        - 대화에 없는 내용을 지어내지 않을 것
+        - 대화에 나온 내용만 정확하게 바탕으로 작성할 것
+        - 대화 내용 외의 정보는 절대로 포함하지 말 것
+        - 내용의 추가나 변형 없이 대화 내용을 그대로 바탕으로 작성
+        - 대화에서 사용된 표현과 일치하는 형태로 작성하되, 일기 형식에 맞게 자연스럽게 연결
 
         작성된 일기:
         """;
@@ -42,7 +47,7 @@ public class GPTService {
         Map<String, Object> requestBody = Map.of(
                 "model", "gpt-4",
                 "messages", List.of(Map.of("role", "user", "content", prompt)),
-                "temperature", 0.7,
+                "temperature", 0.2,
                 "max_tokens", 300
         );
 

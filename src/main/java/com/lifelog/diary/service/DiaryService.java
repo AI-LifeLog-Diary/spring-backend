@@ -2,12 +2,16 @@ package com.lifelog.diary.service;
 
 import com.lifelog.diary.domain.Diary;
 import com.lifelog.diary.domain.User;
+import com.lifelog.diary.domain.enums.AuthProvider;
+import com.lifelog.diary.domain.enums.Gender;
+import com.lifelog.diary.domain.enums.Role;
 import com.lifelog.diary.dto.DiaryReqDto;
 import com.lifelog.diary.dto.DiaryResDto;
 import com.lifelog.diary.repository.DiaryRepository;
 import com.lifelog.diary.repository.UserRepository;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -33,6 +37,16 @@ public class DiaryService {
     }
 
     public DiaryResDto createDiaryFromConversation(Long userId, String content) {
+        userRepository.save(User.builder()
+                .provider(AuthProvider.APPLE)
+                .providerId("1234")
+                .username("GOOGLE_1234567890")
+                .nickname("라이프로그유저")
+                .birth(LocalDate.of(1995, 5, 20))
+                .gender(Gender.MAN)
+                .role(Role.USER)
+                .profile_url("https://example.com/profile.jpg")
+                .build());
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new IllegalArgumentException("User not found"));
 
@@ -57,7 +71,7 @@ public class DiaryService {
     }
 
     public Optional<DiaryResDto> getById(Long diaryId) {
-        return diaryRepository.findByDiaryId(diaryId)
+        return diaryRepository.findById(diaryId)
                 .map(this::toResDto);
     }
 

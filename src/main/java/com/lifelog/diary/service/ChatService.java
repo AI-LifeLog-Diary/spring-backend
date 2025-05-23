@@ -19,7 +19,6 @@ public class ChatService {
 
     public ChatMessageResDto handleChatLogic(Long userId, String conversation, String currentDiary) {
         boolean isFinished = currentDiary != null && !currentDiary.isBlank();
-
         String diaryContent = diaryService.createContentFromConversation(conversation);
 
         String followUpQuestion = isFinished ? null : followQuestionService.generateFollowUpQuestion(conversation);
