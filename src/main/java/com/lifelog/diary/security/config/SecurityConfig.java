@@ -1,6 +1,7 @@
 package com.lifelog.diary.security.config;
 
 
+import com.lifelog.diary.security.converter.AppleTokenResponseClient;
 import com.lifelog.diary.security.jwt.JWTFilter;
 import com.lifelog.diary.security.jwt.JWTUtil;
 import com.lifelog.diary.security.oauth2.CustomSuccessHandler;
@@ -10,7 +11,11 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.oauth2.client.endpoint.DefaultAuthorizationCodeTokenResponseClient;
+import org.springframework.security.oauth2.client.endpoint.OAuth2AccessTokenResponseClient;
+import org.springframework.security.oauth2.client.endpoint.OAuth2AuthorizationCodeGrantRequest;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.web.cors.CorsConfiguration;
@@ -25,26 +30,15 @@ public class SecurityConfig {
     private final CustomOAuth2UserService customOAuth2UserService;
     private final CustomSuccessHandler customSuccessHandler;
     private final JWTUtil jwtUtil;
+    private final OAuth2AccessTokenResponseClient<OAuth2AuthorizationCodeGrantRequest> appleTokenResponseClient;
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
 
-        // CORS 설정
-        http.cors(cors -> cors.configurationSource(request -> {
-            CorsConfiguration config = new CorsConfiguration();
-            config.setAllowedOrigins(List.of("http://localhost:3000")); // (임시) 프론트 주소
-            config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
-            config.setAllowedHeaders(List.of("*"));
-            config.setAllowCredentials(false); // 쿠키 사용 x
-            config.setMaxAge(3600L);
-            config.setExposedHeaders(List.of("Authorization")); // JWT 헤더 노출 허용
-            return config;
-        }));
-
         // CSRF / Form / HTTP Basic 비활성화
-        http.csrf(csrf -> csrf.disable());
-        http.formLogin(form -> form.disable());
-        http.httpBasic(basic -> basic.disable());
+        http.csrf(AbstractHttpConfigurer::disable);
+        http.formLogin(AbstractHttpConfigurer::disable);
+        http.httpBasic(AbstractHttpConfigurer::disable);
 
         // 세션 사용 안 함 (JWT 기반 무상태 인증)
         http.sessionManagement(session -> session
@@ -53,6 +47,7 @@ public class SecurityConfig {
         // OAuth2 로그인
         http.oauth2Login(oauth2 -> oauth2
                 .userInfoEndpoint(userInfo -> userInfo.userService(customOAuth2UserService))
+                .tokenEndpoint(token -> token.accessTokenResponseClient(appleTokenResponseClient))
                 .successHandler(customSuccessHandler)
         );
 
@@ -61,10 +56,27 @@ public class SecurityConfig {
 
         // 경로별 인가 설정
         http.authorizeHttpRequests(auth -> auth
-                .requestMatchers("/login","/auth/refresh","/oauth2/**", "/public/**", "/api/auth/**").permitAll()
+                .requestMatchers("/login", "/login/**", "/auth/refresh","/oauth2/**", "/public/**", "/api/auth/**").permitAll()
                 .anyRequest().authenticated()
         );
 
         return http.build();
     }
+
+    @Bean
+    public OAuth2AccessTokenResponseClient<OAuth2AuthorizationCodeGrantRequest> customTokenResponseClient(
+            AppleTokenResponseClient appleTokenResponseClient
+    ) {
+        DefaultAuthorizationCodeTokenResponseClient defaultClient = new DefaultAuthorizationCodeTokenResponseClient();
+
+        return request -> {
+            String registrationId = request.getClientRegistration().getRegistrationId();
+            if ("apple".equals(registrationId)) {
+                return appleTokenResponseClient.getTokenResponse(request);
+            }
+            return defaultClient.getTokenResponse(request);
+        };
+    }
+
+
 }

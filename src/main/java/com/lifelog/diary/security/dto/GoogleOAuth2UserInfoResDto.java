@@ -1,6 +1,7 @@
 package com.lifelog.diary.security.dto;
 
 
+import com.lifelog.diary.domain.enums.AuthProvider;
 import lombok.Builder;
 import lombok.Getter;
 
@@ -8,13 +9,13 @@ import java.util.Map;
 
 @Getter
 @Builder
-public class GoogleUserInfoResDto implements OAuth2ResDto {
+public class GoogleOAuth2UserInfoResDto implements OAuth2ResDto {
 
     private final Map<String,Object> attribute;
 
     @Override
-    public String getProvider() {
-        return "google";
+    public AuthProvider getProvider() {
+        return AuthProvider.GOOGLE;
     }
     @Override
     public String getProviderId() {

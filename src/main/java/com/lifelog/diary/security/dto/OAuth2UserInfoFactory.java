@@ -7,13 +7,12 @@ import java.util.Map;
 public class OAuth2UserInfoFactory {
 
     public static OAuth2ResDto getOAuth2UserInfo(String registrationId, Map<String, Object> attributes) {
-        switch (registrationId.toLowerCase()) {
-            case "google":
-                return new GoogleUserInfoResDto(attributes);
-            case "apple":
-                return new AppleUserInfoResDto(attributes);
-            default:
-                throw new OAuth2AuthenticationException("Unsupported provider: " + registrationId);
+        if (registrationId.equalsIgnoreCase("google")) {
+            return new GoogleOAuth2UserInfoResDto(attributes);
+        } else if (registrationId.equalsIgnoreCase("apple")) {
+            return new AppleOAuth2UserInfoResDto(attributes);
+        } else {
+            throw new OAuth2AuthenticationException("지원하지 않는 소셜 로그인입니다 : " + registrationId);
         }
     }
 }
