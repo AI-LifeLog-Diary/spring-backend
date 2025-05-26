@@ -13,6 +13,7 @@ import java.util.*;
 public class CustomOAuth2User implements OAuth2User {
 
     private final UserDto userDto;
+    private final boolean isNewUser;
 
     @Override
     public Map<String, Object> getAttributes() {

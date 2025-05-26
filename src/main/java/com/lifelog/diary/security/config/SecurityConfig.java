@@ -18,9 +18,8 @@ import org.springframework.security.oauth2.client.endpoint.OAuth2AccessTokenResp
 import org.springframework.security.oauth2.client.endpoint.OAuth2AuthorizationCodeGrantRequest;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
-import org.springframework.web.cors.CorsConfiguration;
 
-import java.util.List;
+
 
 @Configuration
 @EnableWebSecurity
@@ -30,7 +29,7 @@ public class SecurityConfig {
     private final CustomOAuth2UserService customOAuth2UserService;
     private final CustomSuccessHandler customSuccessHandler;
     private final JWTUtil jwtUtil;
-    private final OAuth2AccessTokenResponseClient<OAuth2AuthorizationCodeGrantRequest> appleTokenResponseClient;
+    private final AppleTokenResponseClient appleTokenResponseClient;
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
@@ -47,7 +46,7 @@ public class SecurityConfig {
         // OAuth2 로그인
         http.oauth2Login(oauth2 -> oauth2
                 .userInfoEndpoint(userInfo -> userInfo.userService(customOAuth2UserService))
-                .tokenEndpoint(token -> token.accessTokenResponseClient(appleTokenResponseClient))
+                .tokenEndpoint(token -> token.accessTokenResponseClient(customTokenResponseClient())) // () 괄호로 호출!
                 .successHandler(customSuccessHandler)
         );
 
@@ -64,19 +63,16 @@ public class SecurityConfig {
     }
 
     @Bean
-    public OAuth2AccessTokenResponseClient<OAuth2AuthorizationCodeGrantRequest> customTokenResponseClient(
-            AppleTokenResponseClient appleTokenResponseClient
-    ) {
+    public OAuth2AccessTokenResponseClient<OAuth2AuthorizationCodeGrantRequest> customTokenResponseClient() {
         DefaultAuthorizationCodeTokenResponseClient defaultClient = new DefaultAuthorizationCodeTokenResponseClient();
 
         return request -> {
             String registrationId = request.getClientRegistration().getRegistrationId();
-            if ("apple".equals(registrationId)) {
+            if ("apple".equalsIgnoreCase(registrationId)) {
                 return appleTokenResponseClient.getTokenResponse(request);
             }
             return defaultClient.getTokenResponse(request);
         };
     }
-
 
 }

@@ -3,14 +3,18 @@ package com.lifelog.diary.service;
 import com.lifelog.diary.common.response.enums.Code;
 import com.lifelog.diary.common.response.exception.GeneralException;
 import com.lifelog.diary.domain.User;
-import com.lifelog.diary.dto.UserJoinReqDto;
-import com.lifelog.diary.dto.UserJoinResDto;
+import com.lifelog.diary.domain.UserHobby;
+import com.lifelog.diary.dto.*;
 import com.lifelog.diary.image.service.ImageService;
 import com.lifelog.diary.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
+
+import java.nio.file.AccessDeniedException;
+import java.util.stream.Collectors;
 
 
 @Service
@@ -37,14 +41,14 @@ public class UserService {
 
             User user = accountService.getCurrentUser();
 
-            user.updateUserInfo(
+            user.updateProfile(
                     userJoinReqDto.getNickname(),
                     userJoinReqDto.getBirth(),
                     userJoinReqDto.getGender(),
                     profileUrl,
+                    userJoinReqDto.getHobbyList(),
                     true
             );
-            user.updateHobbies(userJoinReqDto.getHobbyList());
 
             userRepository.save(user);
 
@@ -59,6 +63,72 @@ public class UserService {
         }
     }
 
+    public UserProfileResDto getProfile(Long userId) throws AccessDeniedException {
+
+        User currentUser = accountService.getCurrentUser();
+
+        if ((currentUser.getId()).equals(userId)) {
+            return UserProfileResDto.builder()
+                    .userId(userId)
+                    .authProvider(currentUser.getProvider())
+                    .email(currentUser.getEmail())
+                    .username(currentUser.getUsername())
+                    .nickname(currentUser.getNickname())
+                    .birth(currentUser.getBirth())
+                    .role(currentUser.getRole())
+                    .gender(currentUser.getGender())
+                    .profileUrl(currentUser.getProfileUrl())
+                    .hobbyList(currentUser.getHobbyList().stream()
+                            .map(UserHobby::getHobby)
+                            .collect(Collectors.toList()))
+                    .createdAt(currentUser.getCreatedAt())
+                    .build();
+        } else {
+            throw new AccessDeniedException("프로필 정보를 조회할 수 있는 권한이 없습니다.");
+        }
+    }
+
+    public UserProfileUpdateResDto updateProfile(Long userId, UserProfileUpdateReqDto userProfileUpdateReqDto) throws AccessDeniedException {
+
+        User currentUser = accountService.getCurrentUser();
+
+        if ((currentUser.getId()).equals(userId)) {
+
+            currentUser.updateProfile(
+                    userProfileUpdateReqDto.getNickname(),
+                    userProfileUpdateReqDto.getBirth(),
+                    userProfileUpdateReqDto.getGender(),
+                    userProfileUpdateReqDto.getProfileUrl(),
+                    userProfileUpdateReqDto.getHobbyList(),
+                    true
+            );
+
+            return UserProfileUpdateResDto.builder()
+                    .userId(userId)
+                    .createdAt(currentUser.getCreatedAt())
+                    .updatedAt(currentUser.getUpdatedAt())
+                    .build();
+        }
+        else {
+            throw new AccessDeniedException("프로필 정보를 수정할 수 있는 권한이 없습니다.");
+        }
+    }
+
+    public void deleteUser() throws AccessDeniedException {
+
+        User currentUser = accountService.getCurrentUser();
+
+        if (currentUser == null) {
+            throw new AccessDeniedException("로그인한 사용자만 탈퇴할 수 있습니다.");
+        }
+
+        try {
+            userRepository.delete(currentUser); // 정책에 따라 soft delete 방식으로 변경할지 고민
+        } catch (DataIntegrityViolationException e) {
+            throw new IllegalStateException("계정에 연결된 데이터로 인해 삭제할 수 없습니다.");
+        }
+
+    }
 
     public boolean isNicknameExists(String nickname) {
         return userRepository.existsByNickname(nickname);

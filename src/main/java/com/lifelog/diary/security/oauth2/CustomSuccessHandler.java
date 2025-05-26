@@ -48,9 +48,11 @@ public class CustomSuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
         response.setContentType("application/json");
         response.setCharacterEncoding("UTF-8");
 
+        boolean isNewUser = customUserDetails.isNewUser();
+
         String json = String.format(
-                "{\"accessToken\":\"%s\", \"refreshToken\":\"%s\"}",
-                accessToken, refreshToken
+                "{\"accessToken\":\"%s\", \"refreshToken\":\"%s\", \"isNewUser\":%b}",
+                accessToken, refreshToken, isNewUser
         );
 
         response.getWriter().write(json);

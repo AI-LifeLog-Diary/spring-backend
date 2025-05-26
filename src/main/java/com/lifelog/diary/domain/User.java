@@ -14,14 +14,13 @@ import lombok.NoArgsConstructor;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Entity
 @Table(name = "user")
 @Getter
 @NoArgsConstructor
 @AllArgsConstructor
-public class User extends BaseCreatedTimeEntity {
+public class User extends BaseTimeEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -96,26 +95,30 @@ public class User extends BaseCreatedTimeEntity {
         this.email = email;
     }
 
-    public void updateUserInfo(String nickname, LocalDate birth,
-                               Gender gender, String profileUrl, boolean profileCompleted) {
-        this.nickname = nickname;
-        this.birth = birth;
-        this.gender = gender;
-        this.profileUrl = profileUrl;
-        this.profileCompleted = profileCompleted;
-    }
+    public void updateProfile(String nickname, LocalDate birth, Gender gender, String profileUrl,
+                              List<Hobby> newHobbies, boolean profileCompleted) {
+        if (nickname != null) this.nickname = nickname;
+        if (birth != null) this.birth = birth;
+        if (gender != null) this.gender = gender;
+        if (profileUrl != null) this.profileUrl = profileUrl;
 
-    public void updateHobbies(List<Hobby> newHobbies) {
-        List<UserHobby> toRemove = this.hobbyList.stream()
-                .filter(h -> !newHobbies.contains(h.getHobby()))
-                .collect(Collectors.toList());
-        this.hobbyList.removeAll(toRemove);
+        if (newHobbies != null) {
+            List<UserHobby> toRemove = this.hobbyList.stream()
+                    .filter(userHobby -> !newHobbies.contains(userHobby.getHobby()))
+                    .toList();
+            this.hobbyList.removeAll(toRemove);
 
-        for (Hobby hobby : newHobbies) {
-            if (this.hobbyList.stream().noneMatch(h -> h.getHobby().equals(hobby))) {
-                this.hobbyList.add(UserHobby.createHobby(this, hobby));
+            for (Hobby hobby : newHobbies) {
+                boolean alreadyExists = this.hobbyList.stream()
+                        .anyMatch(userHobby -> userHobby.getHobby().equals(hobby));
+
+                if (!alreadyExists) {
+                    this.hobbyList.add(UserHobby.createHobby(this, hobby));
+                }
             }
         }
+
+        this.profileCompleted = profileCompleted;
     }
 
 }

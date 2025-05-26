@@ -114,7 +114,7 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
                     .role(Role.USER)
                     .build();
 
-            return new CustomOAuth2User(userDto);
+            return new CustomOAuth2User(userDto, true);
         }
         // 한번이라도 로그인 해서 유저 정보가 존재하는 경우
         else {
@@ -131,8 +131,7 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
                     .role(existUserData.getRole())
                     .build();
 
-            return new CustomOAuth2User(userDto);
-
+            return new CustomOAuth2User(userDto, false);
         }
     }
 }
