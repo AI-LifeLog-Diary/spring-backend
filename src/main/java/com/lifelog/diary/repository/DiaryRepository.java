@@ -5,11 +5,9 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
-import java.util.Optional;
 
 @Repository
 public interface DiaryRepository extends JpaRepository<Diary, String> {
-    Optional<Diary> findById(Long id);
     List<Diary> findByUserId(Long userId);
 }
 

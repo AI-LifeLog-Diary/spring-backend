@@ -1,68 +1,99 @@
 package com.lifelog.diary.service;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import jakarta.annotation.PostConstruct;
+import lombok.RequiredArgsConstructor;
+import org.apache.http.HttpHeaders;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.HttpHeaders;
+import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.MediaType;
+import org.springframework.http.codec.ServerSentEvent;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
+import reactor.core.publisher.Flux;
 
+import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 
 @Service
+@RequiredArgsConstructor
 public class GPTService {
 
-    private final WebClient webClient;
-
-    @Value("${openai.api.key}")
+    @Value("${OPEN_API_KEY}")
     private String apiKey;
 
-    private static final String DIARY_PROMPT_TEMPLATE = """
-        다음은 한 사용자가 오늘 하루에 대해 이야기한 대화 내용이야. 이 내용을 바탕으로 자연스럽고 일기처럼 정리해줘.
+    private final ObjectMapper objectMapper;
+    private WebClient webClient;
 
-        대화 내용:
-        %s
-
-        조건:
-        - 날짜 없이 시작
-        - 문어체, 일기체로 작성
-        - 중복 없이 자연스럽게 연결
-        - 3~5문장 정도로 작성
-        - 대화에 없는 내용을 지어내지 않을 것
-        - 대화에 나온 내용만 정확하게 바탕으로 작성할 것
-        - 대화 내용 외의 정보는 절대로 포함하지 말 것
-        - 내용의 추가나 변형 없이 대화 내용을 그대로 바탕으로 작성
-        - 대화에서 사용된 표현과 일치하는 형태로 작성하되, 일기 형식에 맞게 자연스럽게 연결
-
-        작성된 일기:
-        """;
-
-    public GPTService(WebClient webClient) {
-        this.webClient = webClient;
+    @PostConstruct
+    public void initWebClient() {
+        this.webClient = WebClient.builder()
+                .baseUrl("https://api.openai.com")
+                .defaultHeader(HttpHeaders.AUTHORIZATION, "Bearer " + apiKey)
+                .build();
     }
 
-    public String generateDiaryFromConversation(String conversation) {
-        String prompt = String.format(DIARY_PROMPT_TEMPLATE, conversation.trim());
-
-        Map<String, Object> requestBody = Map.of(
-                "model", "gpt-4",
-                "messages", List.of(Map.of("role", "user", "content", prompt)),
-                "temperature", 0.2,
-                "max_tokens", 300
-        );
+    public Flux<String> streamDiaryFromConversation(String conversation) {
+        Map<String, Object> body = buildRequestBody(conversation, true);
 
         return webClient.post()
-                .uri("https://api.openai.com/v1/chat/completions")
-                .header(HttpHeaders.AUTHORIZATION, "Bearer " + apiKey)
-                .header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
-                .bodyValue(requestBody)
+                .uri("/v1/chat/completions")
+                .contentType(MediaType.APPLICATION_JSON)
+                .accept(MediaType.TEXT_EVENT_STREAM)
+                .bodyValue(body)
                 .retrieve()
-                .bodyToMono(Map.class)
-                .map(response -> {
-                    List<Map<String, Object>> choices = (List<Map<String, Object>>) response.get("choices");
-                    Map<String, Object> message = (Map<String, Object>) choices.get(0).get("message");
-                    return ((String) message.get("content")).trim();
-                })
-                .block(); // 동기 처리
+                .bodyToFlux(new ParameterizedTypeReference<ServerSentEvent<String>>() {})
+                .map(ServerSentEvent::data)
+                .flatMap(this::parseStreamChunk)
+                .onErrorResume(e -> {
+                    System.err.println("[GPTService] 스트리밍 오류: " + e.getMessage());
+                    return Flux.empty();
+                });
+    }
+
+    private Map<String, Object> buildRequestBody(String conversation, boolean stream) {
+        return Map.of(
+                "model", "gpt-4",
+                "stream", stream,
+                "messages", List.of(Map.of("role", "user", "content", createPrompt(conversation)))
+        );
+    }
+
+    private Flux<String> parseStreamChunk(String chunk) {
+        if (chunk == null || chunk.isBlank()) return Flux.empty();
+        if ("[DONE]".equals(chunk.trim())) return Flux.empty();
+
+        try {
+            JsonNode root = objectMapper.readTree(chunk);
+            JsonNode contentNode = root.path("choices").get(0).path("delta").path("content");
+
+            if (contentNode != null && !contentNode.isNull()) {
+                return Flux.just(contentNode.asText());
+            }
+        } catch (IOException e) {
+            System.err.println("[GPTService] JSON 파싱 실패: " + e.getMessage());
+        }
+        return Flux.empty();
+    }
+
+    private String createPrompt(String conversation) {
+        String template = """
+                다음은 한 사용자가 오늘 하루에 대해 이야기한 대화 내용이야. 이 내용을 바탕으로 자연스럽고 일기처럼 정리해줘.
+                
+                대화 내용:
+                {conversation}
+                
+                조건:
+                - 날짜 없이 시작
+                - 문어체, 일기체로 작성
+                - 중복 없이 자연스럽게 연결
+                - 3~5문장 정도로 작성
+                
+                작성된 일기:
+                """;
+
+        return template.replace("{diaryContent}", conversation);
     }
 }

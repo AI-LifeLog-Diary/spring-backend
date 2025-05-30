@@ -63,7 +63,7 @@ public class DiaryController {
     public ResponseEntity<ResponseDto<DiaryResDto>> updateDiary(@PathVariable String diaryId,
                                                                 @RequestBody DiaryUpdateDto update) {
 
-        Optional<DiaryResDto> updatedDiary = diaryService.update(diaryId, update.getContent());
+        Optional<DiaryResDto> updatedDiary = diaryService.update(Long.valueOf(diaryId), update.getContent());
 
         return updatedDiary
                 .map(diary -> {
