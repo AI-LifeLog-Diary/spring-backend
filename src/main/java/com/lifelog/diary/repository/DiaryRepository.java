@@ -7,9 +7,9 @@ import org.springframework.stereotype.Repository;
 import java.util.List;
 import java.util.Optional;
 
-@Repository
-public interface DiaryRepository extends JpaRepository<Diary, String> {
-    Optional<Diary> findByDiaryId(Long diaryId);
-    List<Diary> findByUserId(Long userId);
-}
+//@Repository
+//public interface DiaryRepository extends JpaRepository<Diary, String> {
+//    Optional<Diary> findByDiaryId(Long diaryId);
+//    List<Diary> findByUserId(Long userId);
+//}
 
