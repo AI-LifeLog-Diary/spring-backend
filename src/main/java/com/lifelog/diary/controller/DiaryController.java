@@ -25,10 +25,8 @@ public class DiaryController {
 
     @PostMapping
     public ResponseEntity<ResponseDto<DiaryResDto>> createDiary(
-            @RequestParam Long userId,
-            @RequestParam String content
+            @RequestBody DiaryReqDto dto
     ) {
-        DiaryReqDto dto = new DiaryReqDto(userId, content);
         DiaryResDto diary = diaryService.createDiary(dto);
 
         MetaResponseDto meta = new MetaResponseDto(Code.OK, "일기 생성 성공");

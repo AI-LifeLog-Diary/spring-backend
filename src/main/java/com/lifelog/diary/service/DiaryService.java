@@ -1,5 +1,7 @@
 package com.lifelog.diary.service;
 
+import com.lifelog.diary.common.response.enums.Code;
+import com.lifelog.diary.common.response.exception.GeneralException;
 import com.lifelog.diary.domain.Diary;
 import com.lifelog.diary.domain.User;
 import com.lifelog.diary.dto.DiaryReqDto;
@@ -8,8 +10,6 @@ import com.lifelog.diary.repository.DiaryRepository;
 import com.lifelog.diary.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
-import reactor.core.publisher.Mono;
-import reactor.core.scheduler.Schedulers;
 
 import java.util.List;
 import java.util.Optional;
@@ -51,7 +51,7 @@ public class DiaryService {
 
     public DiaryResDto createDiary(DiaryReqDto dto) {
         User user = userRepository.findById(dto.getUserId())
-                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 사용자입니다"));
+                .orElseThrow(() -> new GeneralException(Code.USER_NOT_FOUND));
 
         Diary diary = Diary.builder()
                 .user(user)

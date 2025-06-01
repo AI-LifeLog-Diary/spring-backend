@@ -1,7 +1,6 @@
 package com.lifelog.diary.controller;
 
 import com.lifelog.diary.dto.ChatMessageReqDto;
-import com.lifelog.diary.dto.ChatMessageResDto;
 import com.lifelog.diary.service.ChatService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.MediaType;
@@ -18,7 +17,7 @@ public class ChatController {
     private final ChatService chatService;
 
     @PostMapping(value = "/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
-    public Flux<ChatMessageResDto> streamDiaryFromConversation(@RequestBody ChatMessageReqDto reqDto) {
+    public Flux<String> streamDiaryFromConversation(@RequestBody ChatMessageReqDto reqDto) {
         return chatService.chatAndCreateDiary(
                 reqDto.getUserId(),
                 reqDto.getConversation(),
