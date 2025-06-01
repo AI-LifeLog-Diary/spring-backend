@@ -27,15 +27,15 @@ public class UserController {
         return new ResponseDto<>(meta, Collections.singletonList(data));
     }
 
-    @GetMapping("/join/nickname-check")
+    @GetMapping("/join/check-nickname")
     public ResponseDto<Boolean> verifyDuplicateNickname(@RequestParam("nickname") String nickname) {
         boolean isExists = userService.isNicknameExists(nickname);
         if (!isExists) {
             MetaResponseDto meta = new MetaResponseDto(Code.OK, "사용 가능한 닉네임입니다.");
-            return new ResponseDto<>(meta, Collections.emptyList());
+            return new ResponseDto<>(meta, Collections.singletonList(false));
         } else {
             MetaResponseDto meta = new MetaResponseDto(Code.OK, "이미 사용 중인 닉네임입니다.");
-            return new ResponseDto<>(meta, Collections.emptyList());
+            return new ResponseDto<>(meta, Collections.singletonList(true));
         }
     }
 

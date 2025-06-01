@@ -49,7 +49,7 @@ public class TokenHandleService {
                     .refreshToken(newRefreshToken)
                     .build();
         } else {
-            throw new GeneralException(Code.UNAUTHORIZED, "Refresh Token이 유효하지 않거나 만료되었습니다.");
+            throw new GeneralException(Code.INVALID_TOKEN, "Refresh Token이 유효하지 않거나 만료되었습니다.");
         }
     }
 }

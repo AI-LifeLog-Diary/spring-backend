@@ -50,14 +50,16 @@ public class DialogueChatService {
         // 두 번째 이후 대화
         else {
             session = dialogueChatSessionRepository.findTopByUserOrderByCreatedAtDesc(user)
-                    .orElseThrow(() -> new GeneralException(Code.SESSION_NOT_FOUND));
+                    .orElseThrow(() -> new GeneralException(Code.SESSION_NOT_FOUND, "채팅방이 존재하지 않습니다."));
 
             DialogueChat userChat = DialogueChat.createDialogueChat(
                     user,
                     session,
                     aesUtil.encrypt(dialogueChatReqDto.getUserInput()),
+                    user.getNickname(),
                     ChatRole.USER
             );
+            System.out.println(userChat.getNickname());
             dialogueChatRepository.save(userChat);
             session.updateTime();
         }
@@ -85,6 +87,7 @@ public class DialogueChatService {
                                 user,
                                 session,
                                 aesUtil.encrypt(buffer.toString()),
+                                "챗봇",
                                 ChatRole.ASSISTANT
                         );
                     } catch (Exception e) {
@@ -96,66 +99,77 @@ public class DialogueChatService {
 
     public List<DialogueChatSessionResDto> getChatList(Long userId) {
 
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new GeneralException(Code.USER_NOT_FOUND, "존재하지 않는 사용자입니다."));
+        try {
+            User user = userRepository.findById(userId)
+                    .orElseThrow(() -> new GeneralException(Code.USER_NOT_FOUND, "존재하지 않는 사용자입니다."));
 
-        List<DialogueChatSession> dialogueChatSessions = dialogueChatSessionRepository.findAllTopByUserOrderByCreatedAtDesc(user);
+            List<DialogueChatSession> dialogueChatSessions = dialogueChatSessionRepository.findAllTopByUserOrderByCreatedAtDesc(user);
 
-        return dialogueChatSessions.stream()
-                .map(dialogueChatSession -> {
+            return dialogueChatSessions.stream()
+                    .map(dialogueChatSession -> {
 
-                    DialogueChat lastChat = dialogueChatRepository.findTopByDialogueChatSessionOrderByCreatedAtDesc(dialogueChatSession);
+                        DialogueChat lastChat = dialogueChatRepository.findTopByDialogueChatSessionOrderByCreatedAtDesc(dialogueChatSession);
 
-                    LastMessageInfoDto lastMessage = null;
+                        LastMessageInfoDto lastMessage = null;
 
-                    if (lastChat != null) {
-                        try {
-                            lastMessage = LastMessageInfoDto.builder()
-                                    .messageId(lastChat.getId())
-                                    .chatRole(lastChat.getChatRole())
-                                    .message(aesUtil.decrypt(lastChat.getMessage()))
-                                    .createdAt(lastChat.getCreatedAt())
-                                    .build();
-                        } catch (Exception e) {
-                            throw new RuntimeException(e);
+                        if (lastChat != null) {
+                            try {
+                                lastMessage = LastMessageInfoDto.builder()
+                                        .messageId(lastChat.getId())
+                                        .chatRole(lastChat.getChatRole())
+                                        .message(aesUtil.decrypt(lastChat.getMessage()))
+                                        .createdAt(lastChat.getCreatedAt())
+                                        .build();
+                            } catch (Exception e) {
+                                throw new RuntimeException(e);
+                            }
                         }
-                    }
-                    return DialogueChatSessionResDto.builder()
-                            .sessionId(dialogueChatSession.getId())
-                            .userId(userId)
-                            .lastMessageInfoDto(lastMessage)
-                            .createdAt(dialogueChatSession.getCreatedAt())
-                            .updatedAt(dialogueChatSession.getUpdatedAt())
-                            .build();
-                })
-                .collect(Collectors.toList());
+                        return DialogueChatSessionResDto.builder()
+                                .sessionId(dialogueChatSession.getId())
+                                .userId(userId)
+                                .lastMessageInfoDto(lastMessage)
+                                .createdAt(dialogueChatSession.getCreatedAt())
+                                .updatedAt(dialogueChatSession.getUpdatedAt())
+                                .build();
+                    })
+                    .collect(Collectors.toList());
+        } catch (Exception e) {
+            throw new GeneralException(Code.INTERNAL_ERROR, "채팅방 목록 조회 도중 알 수 없는 에러가 발생했습니다.");
+        }
+
     }
 
 
     public DialogueChatMessageResDto getChatDetail(Long userId, Long sessionId, Long cursor, int size) {
-        Pageable pageable = PageRequest.of(0, size, Sort.by(Sort.Direction.DESC, "id"));
 
-        List<DialogueChat> messages = (cursor == null)
-                ? dialogueChatRepository.findByUserIdAndDialogueChatSessionIdOrderByIdDesc(userId, sessionId, pageable)
-                : dialogueChatRepository.findByUserIdAndDialogueChatSessionIdAndIdLessThanOrderByIdDesc(userId, sessionId, cursor, pageable);
+        try {
+            Pageable pageable = PageRequest.of(0, size, Sort.by(Sort.Direction.DESC, "id"));
 
-        List<MessageInfoDto> messageInfoDtoList = messages.stream()
-                .map(chat -> {
-                    try {
-                        return MessageInfoDto.from(chat, aesUtil);
-                    } catch (Exception e) {
-                        throw new RuntimeException(e);
-                    }
-                })
-                .collect(Collectors.toList());
+            List<DialogueChat> messages = (cursor == null)
+                    ? dialogueChatRepository.findByUserIdAndDialogueChatSessionIdOrderByIdDesc(userId, sessionId, pageable)
+                    : dialogueChatRepository.findByUserIdAndDialogueChatSessionIdAndIdLessThanOrderByIdDesc(userId, sessionId, cursor, pageable);
 
-        Long nextCursor = messageInfoDtoList.isEmpty() ? null : messageInfoDtoList.get(messageInfoDtoList.size() - 1).getMessageId();
-        boolean hasNextPage = nextCursor != null && dialogueChatRepository.existsByDialogueChatSessionIdAndIdLessThan(sessionId, nextCursor);
+            List<MessageInfoDto> messageInfoDtoList = messages.stream()
+                    .map(chat -> {
+                        try {
+                            return MessageInfoDto.from(chat, aesUtil);
+                        } catch (Exception e) {
+                            throw new RuntimeException(e);
+                        }
+                    })
+                    .collect(Collectors.toList());
 
-        return DialogueChatMessageResDto.builder()
-                .messages(messageInfoDtoList)
-                .nextCursor(nextCursor)
-                .hasNextPage(hasNextPage)
-                .build();
+            Long nextCursor = messageInfoDtoList.isEmpty() ? null : messageInfoDtoList.get(messageInfoDtoList.size() - 1).getMessageId();
+            boolean hasNextPage = nextCursor != null && dialogueChatRepository.existsByDialogueChatSessionIdAndIdLessThan(sessionId, nextCursor);
+
+            return DialogueChatMessageResDto.builder()
+                    .messages(messageInfoDtoList)
+                    .nextCursor(nextCursor)
+                    .hasNextPage(hasNextPage)
+                    .build();
+        } catch (Exception e) {
+            throw new GeneralException(Code.INTERNAL_ERROR, "채팅 목록 조회 도중 알 수 없는 오류가 발생했습니다.");
+        }
     }
+
 }

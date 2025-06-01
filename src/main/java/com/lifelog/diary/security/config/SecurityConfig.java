@@ -55,7 +55,7 @@ public class SecurityConfig {
 
         // 경로별 인가 설정
         http.authorizeHttpRequests(auth -> auth
-                .requestMatchers("/login", "/login/**", "/auth/refresh","/oauth2/**", "/public/**", "/api/auth/**").permitAll()
+                .requestMatchers("/login", "/login/**", "/auth/refresh/**","/oauth2/**", "/public/**", "/api/auth/**").permitAll()
                 .anyRequest().authenticated()
         );
 
