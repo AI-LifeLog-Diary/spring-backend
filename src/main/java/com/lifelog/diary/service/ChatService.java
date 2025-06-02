@@ -1,30 +1,40 @@
 package com.lifelog.diary.service;
 
-import com.lifelog.diary.dto.ChatMessageResDto;
-import com.lifelog.diary.dto.DiaryResDto;
+import com.lifelog.diary.dto.DiaryReqDto;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import reactor.core.publisher.Flux;
+import reactor.core.scheduler.Schedulers;
 
-import java.util.List;
-//
-//@Service
-//public class ChatService {
-//
-//    private final FollowQuestionService followQuestionService;
-//    private final DiaryService diaryService;
-//
-//    public ChatService(FollowQuestionService followQuestionService, DiaryService diaryService) {
-//        this.followQuestionService = followQuestionService;
-//        this.diaryService = diaryService;
-//    }
-//
-//    public ChatMessageResDto handleChatLogic(Long userId, String conversation, String currentDiary) {
-//        boolean isFinished = currentDiary != null && !currentDiary.isBlank();
-//
-//        String diaryContent = diaryService.createContentFromConversation(conversation);
-//
-//        String followUpQuestion = isFinished ? null : followQuestionService.generateFollowUpQuestion(conversation);
-//        DiaryResDto diaryResDto = isFinished ? diaryService.createDiaryFromConversation(userId, diaryContent) : null;
-//
-//        return new ChatMessageResDto(followUpQuestion, diaryContent, diaryResDto);
-//    }
-//}
+@Service
+@RequiredArgsConstructor
+public class ChatService {
+
+    private final GPTService gptService;
+    private final DiaryService diaryService;
+    private final FollowQuestionService followQuestionService;
+
+    public Flux<String> chatAndCreateDiary(Long userId, String conversation, String currentDiary) {
+        boolean isDiaryPresent = currentDiary != null && !currentDiary.isBlank();
+
+        if (isDiaryPresent) {
+            StringBuilder diaryBuilder = new StringBuilder();
+            return gptService.streamDiaryFromConversation(conversation)
+                    .publishOn(Schedulers.boundedElastic())
+                    .doOnNext(diaryBuilder::append)
+                    .doOnComplete(() -> diaryService.createDiary(new DiaryReqDto(userId, diaryBuilder.toString())));
+        }
+
+        if (conversation == null || conversation.isBlank()) {
+            return Flux.just("data: " + "안녕, 오늘은 어떤 일이 있었어?");
+        }
+
+        Flux<String> followUpFlux = followQuestionService.streamFollowUpQuestionFromConversation(conversation)
+                .map(token -> "FOLLOWUP: " + token);
+
+        Flux<String> diaryFlux = gptService.streamDiaryFromConversation(conversation)
+                .map(token -> "DIARY: " + token);
+
+        return Flux.concat(followUpFlux, diaryFlux);
+    }
+}
