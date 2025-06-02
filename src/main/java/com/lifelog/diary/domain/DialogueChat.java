@@ -27,25 +27,30 @@ public class DialogueChat extends BaseCreatedTimeEntity {
     @Column(name = "message", nullable = false, length = 10000)
     private String message;
 
+    @Column(name = "nickname")
+    private String nickname;
+
     @Enumerated(value = EnumType.STRING)
     private ChatRole chatRole;
 
     @Builder
     private DialogueChat(User user, DialogueChatSession dialogueChatSession,
-                        String message, ChatRole chatRole) {
+                        String message, String nickname, ChatRole chatRole) {
         this.user = user;
         this.dialogueChatSession = dialogueChatSession;
         this.message = message;
+        this.nickname = nickname;
         this.chatRole = chatRole;
     }
 
     // 생성 메서드
     public static DialogueChat createDialogueChat(User user, DialogueChatSession dialogueChatSession,
-                                                  String message, ChatRole chatRole) {
+                                                  String message, String nickname, ChatRole chatRole) {
         return DialogueChat.builder()
                 .user(user)
                 .dialogueChatSession(dialogueChatSession)
                 .message(message)
+                .nickname(nickname)
                 .chatRole(chatRole)
                 .build();
     }

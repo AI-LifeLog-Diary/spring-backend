@@ -18,7 +18,6 @@ public class Diary extends BaseTimeEntity {
     private User user;
 
     @Setter
-    @Lob
     @Column(name = "content", nullable = false)
     private String content;
 
