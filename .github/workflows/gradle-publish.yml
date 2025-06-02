@@ -38,5 +38,5 @@ jobs:
         run: |
           docker login -u ${{ secrets.DOCKERHUB_USERNAME }} -p ${{ secrets.DOCKER_PASSWORD }}
           docker build -t app .
-          docker tag app ${{ secrets.DOCKERHUB_USERNAME }}/chapterkeep:latest
-          docker push ${{ secrets.DOCKERHUB_USERNAME }}/chapterkeep:latest
+          docker tag app ${{ secrets.DOCKERHUB_USERNAME }}/moai:latest
+          docker push ${{ secrets.DOCKERHUB_USERNAME }}/moai:latest
