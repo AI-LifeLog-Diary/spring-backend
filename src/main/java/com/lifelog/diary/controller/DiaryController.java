@@ -25,10 +25,8 @@ public class DiaryController {
 
     @PostMapping
     public ResponseEntity<ResponseDto<DiaryResDto>> createDiary(
-            @RequestParam Long userId,
-            @RequestParam String content
+            @RequestBody DiaryReqDto dto
     ) {
-        DiaryReqDto dto = new DiaryReqDto(userId, content);
         DiaryResDto diary = diaryService.createDiary(dto);
 
         MetaResponseDto meta = new MetaResponseDto(Code.OK, "일기 생성 성공");
@@ -61,9 +59,9 @@ public class DiaryController {
 
     @PutMapping("/{diaryId}")
     public ResponseEntity<ResponseDto<DiaryResDto>> updateDiary(@PathVariable String diaryId,
-                                                                @RequestBody DiaryUpdateDto updateSocial) {
+                                                                @RequestBody DiaryUpdateDto update) {
 
-        Optional<DiaryResDto> updatedDiary = diaryService.updateSocial(diaryId, updateSocial.getContent());
+        Optional<DiaryResDto> updatedDiary = diaryService.update(Long.valueOf(diaryId), update.getContent());
 
         return updatedDiary
                 .map(diary -> {
