@@ -40,3 +40,11 @@ jobs:
           docker build -t app .
           docker tag app ${{ secrets.DOCKERHUB_USERNAME }}/moai-spring-backend:latest
           docker push ${{ secrets.DOCKERHUB_USERNAME }}/moai-spring-backend:latest
+
+      # Deploy repo trigger
+      - name: Trigger deploy repo workflow
+        uses: peter-evans/repository-dispatch@v3
+        with:
+          token: ${{ secrets.GH_PERSONAL_ACCESS_TOKEN }}
+          repository: AI-LifeLog-Diary/moai-deploy
+          event-type: deploy
