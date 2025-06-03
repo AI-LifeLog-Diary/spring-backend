@@ -11,6 +11,9 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.web.authentication.SimpleUrlAuthenticationSuccessHandler;
 import org.springframework.stereotype.Component;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
+
 
 import java.io.IOException;
 import java.util.Collection;
@@ -50,11 +53,13 @@ public class CustomSuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
 
         boolean isNewUser = customUserDetails.isNewUser();
 
-        String json = String.format(
-                "{\"accessToken\":\"%s\", \"refreshToken\":\"%s\", \"isNewUser\":%b}",
-                accessToken, refreshToken, isNewUser
+        String redirectUri = String.format(
+                "moaiapp://oauth2/callback?accessToken=%s&refreshToken=%s&isNewUser=%b",
+                URLEncoder.encode(accessToken, StandardCharsets.UTF_8),
+                URLEncoder.encode(refreshToken, StandardCharsets.UTF_8),
+                isNewUser
         );
 
-        response.getWriter().write(json);
+        response.sendRedirect(redirectUri);
     }
 }
