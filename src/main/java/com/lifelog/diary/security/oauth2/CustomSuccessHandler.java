@@ -53,13 +53,20 @@ public class CustomSuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
 
         boolean isNewUser = customUserDetails.isNewUser();
 
-        String redirectUri = String.format(
-                "moaiapp://oauth2/callback?accessToken=%s&refreshToken=%s&isNewUser=%b",
+        String schemePrefix = (String) request.getSession().getAttribute("dynamic_redirect_uri");
+        if (schemePrefix == null || schemePrefix.isBlank()) {
+            schemePrefix = "";
+        }
+
+        String finalRedirect = String.format(
+                "%s://oauth2/callback?accessToken=%s&refreshToken=%s&isNewUser=%b",
+                schemePrefix,
                 URLEncoder.encode(accessToken, StandardCharsets.UTF_8),
                 URLEncoder.encode(refreshToken, StandardCharsets.UTF_8),
                 isNewUser
         );
 
-        response.sendRedirect(redirectUri);
+        response.sendRedirect(finalRedirect);
+        System.out.println(finalRedirect);
     }
 }
