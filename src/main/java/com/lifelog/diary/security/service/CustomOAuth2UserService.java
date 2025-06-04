@@ -131,7 +131,9 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
                     .role(existUserData.getRole())
                     .build();
 
-            return new CustomOAuth2User(userDto, false);
+            User user = userRepository.findByUsername(username);
+            boolean isNewUser = !user.isProfileCompleted();
+            return new CustomOAuth2User(userDto, isNewUser);
         }
     }
 }
