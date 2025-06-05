@@ -51,6 +51,12 @@ spring:
             authorization-uri: https://appleid.apple.com/auth/authorize?scope=name%20email&response_mode=form_post
             token-uri: https://appleid.apple.com/auth/token
 
+  servlet:
+    multipart:
+      max-file-size: 5MB
+      max-request-size: 5MB
+
+
   jwt:
     secret: ${JWT_SECRET_KEY}
 
@@ -86,3 +92,4 @@ fast-api:
 
 server:
   forward-headers-strategy: native
+
