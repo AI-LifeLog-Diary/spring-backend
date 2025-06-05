@@ -16,7 +16,7 @@ import lombok.NoArgsConstructor;
 public class UserHobby {
 
     @Id
-    @GeneratedValue
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     @Enumerated(EnumType.STRING)
