@@ -2,6 +2,7 @@ package com.lifelog.diary.security.config;
 
 
 import com.lifelog.diary.security.converter.AppleTokenResponseClient;
+import com.lifelog.diary.security.interceptor.OAuth2RequestUriFilter;
 import com.lifelog.diary.security.jwt.JWTFilter;
 import com.lifelog.diary.security.jwt.JWTUtil;
 import com.lifelog.diary.security.oauth2.CustomSuccessHandler;
@@ -18,7 +19,7 @@ import org.springframework.security.oauth2.client.endpoint.OAuth2AccessTokenResp
 import org.springframework.security.oauth2.client.endpoint.OAuth2AuthorizationCodeGrantRequest;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
-
+import org.springframework.security.web.authentication.preauth.AbstractPreAuthenticatedProcessingFilter;
 
 
 @Configuration
@@ -51,7 +52,9 @@ public class SecurityConfig {
         );
 
         // JWT 필터 등록 (모든 인증 요청 전에 실행되도록 설정)
-        http.addFilterBefore(new JWTFilter(jwtUtil), UsernamePasswordAuthenticationFilter.class);
+        http
+                .addFilterBefore(new OAuth2RequestUriFilter(), AbstractPreAuthenticatedProcessingFilter.class)
+                .addFilterBefore(new JWTFilter(jwtUtil), UsernamePasswordAuthenticationFilter.class);
 
         // 경로별 인가 설정
         http.authorizeHttpRequests(auth -> auth
