@@ -17,7 +17,7 @@ public class OAuth2RequestUriFilter extends OncePerRequestFilter {
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
-        String requestUri = request.getParameter("request-uri");
+        String requestUri = request.getParameter("redirect-uri");
         if (requestUri != null) {
             request.getSession().setAttribute("dynamic_redirect_uri", requestUri);
         }
