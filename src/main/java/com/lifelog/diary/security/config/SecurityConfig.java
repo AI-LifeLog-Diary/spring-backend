@@ -1,12 +1,17 @@
 package com.lifelog.diary.security.config;
 
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.lifelog.diary.common.response.dto.ErrorResponseDto;
+import com.lifelog.diary.common.response.dto.MetaResponseDto;
+import com.lifelog.diary.common.response.enums.Code;
 import com.lifelog.diary.security.converter.AppleTokenResponseClient;
 import com.lifelog.diary.security.interceptor.OAuth2RequestUriFilter;
 import com.lifelog.diary.security.jwt.JWTFilter;
 import com.lifelog.diary.security.jwt.JWTUtil;
 import com.lifelog.diary.security.oauth2.CustomSuccessHandler;
 import com.lifelog.diary.security.service.CustomOAuth2UserService;
+import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -20,6 +25,8 @@ import org.springframework.security.oauth2.client.endpoint.OAuth2AuthorizationCo
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.security.web.authentication.preauth.AbstractPreAuthenticatedProcessingFilter;
+
+import java.util.Collections;
 
 
 @Configuration
@@ -49,6 +56,21 @@ public class SecurityConfig {
                 .userInfoEndpoint(userInfo -> userInfo.userService(customOAuth2UserService))
                 .tokenEndpoint(token -> token.accessTokenResponseClient(customTokenResponseClient())) // () 괄호로 호출!
                 .successHandler(customSuccessHandler)
+        );
+
+        http.exceptionHandling(exception -> exception
+                .authenticationEntryPoint((request, response, authException) -> {
+
+                    MetaResponseDto meta = new MetaResponseDto(Code.INVALID_TOKEN, "엑세스 토큰이 유효하지 않거나 존재하지 않습니다.");
+                    ErrorResponseDto<Object> error = new ErrorResponseDto<>(meta, Collections.emptyList());
+
+                    response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+                    response.setContentType("application/json");
+                    response.setCharacterEncoding("UTF-8");
+
+                    ObjectMapper objectMapper = new ObjectMapper();
+                    response.getWriter().write(objectMapper.writeValueAsString(error));
+                })
         );
 
         // JWT 필터 등록 (모든 인증 요청 전에 실행되도록 설정)
