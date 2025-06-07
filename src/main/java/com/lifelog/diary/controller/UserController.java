@@ -39,23 +39,22 @@ public class UserController {
         }
     }
 
-    @GetMapping("/profile/{userId}")
-    public ResponseDto<UserProfileResDto> getProfile(@PathVariable("userId") Long userId) throws AccessDeniedException {
-        UserProfileResDto data = userService.getProfile(userId);
+    @GetMapping("/profile")
+    public ResponseDto<UserProfileResDto> getProfile() throws AccessDeniedException {
+        UserProfileResDto data = userService.getProfile();
         MetaResponseDto meta = new MetaResponseDto(Code.OK, "사용자 프로필을 성공적으로 조회하였습니다.");
         return new ResponseDto<>(meta, Collections.singletonList(data));
     }
 
-    @PatchMapping("/profile/{userId}/update")
-    public ResponseDto<UserProfileUpdateResDto> updateProfile(@PathVariable("userId") Long userId,
-                                                              @RequestBody UserProfileUpdateReqDto userProfileUpdateReqDto) throws AccessDeniedException {
-        UserProfileUpdateResDto data = userService.updateProfile(userId, userProfileUpdateReqDto);
+    @PatchMapping("/profile/update")
+    public ResponseDto<UserProfileUpdateResDto> updateProfile(@RequestBody UserProfileUpdateReqDto userProfileUpdateReqDto) throws AccessDeniedException {
+        UserProfileUpdateResDto data = userService.updateProfile(userProfileUpdateReqDto);
         MetaResponseDto meta = new MetaResponseDto(Code.OK, "사용자 프로필을 성공적으로 수정하였습니다.");
         return new ResponseDto<>(meta, Collections.singletonList(data));
     }
 
     @DeleteMapping("/profile/delete")
-    public ResponseDto<Void> updateProfile() throws AccessDeniedException {
+    public ResponseDto<Void> deleteProfile() throws AccessDeniedException {
         MetaResponseDto meta = new MetaResponseDto(Code.OK, "사용자 탈퇴가 성공적으로 수행되었습니다.");
         userService.deleteUser();
         return new ResponseDto<>(meta, Collections.emptyList());
