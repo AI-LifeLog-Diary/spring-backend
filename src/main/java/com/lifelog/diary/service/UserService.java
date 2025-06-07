@@ -63,7 +63,7 @@ public class UserService {
         }
     }
 
-    public UserProfileResDto getProfile(Long userId) throws AccessDeniedException {
+    public UserProfileResDto getProfile() {
         try {
             User currentUser;
             try {
@@ -72,32 +72,29 @@ public class UserService {
                 throw new GeneralException(Code.USER_NOT_FOUND, "현재 인증된 회원이 존재하지 않습니다.");
             }
 
-            if ((currentUser.getId()).equals(userId)) {
-                return UserProfileResDto.builder()
-                        .userId(userId)
-                        .authProvider(currentUser.getProvider())
-                        .email(currentUser.getEmail())
-                        .username(currentUser.getUsername())
-                        .nickname(currentUser.getNickname())
-                        .birth(currentUser.getBirth())
-                        .role(currentUser.getRole())
-                        .gender(currentUser.getGender())
-                        .profileUrl(currentUser.getProfileUrl())
-                        .hobbyList(currentUser.getHobbyList().stream()
-                                .map(UserHobby::getHobby)
-                                .collect(Collectors.toList()))
-                        .createdAt(currentUser.getCreatedAt())
-                        .build();
-            } else {
-                throw new AccessDeniedException("프로필 정보를 조회할 수 있는 권한이 없습니다.");
-            }
+            return UserProfileResDto.builder()
+                    .userId(currentUser.getId())
+                    .authProvider(currentUser.getProvider())
+                    .email(currentUser.getEmail())
+                    .username(currentUser.getUsername())
+                    .nickname(currentUser.getNickname())
+                    .birth(currentUser.getBirth())
+                    .role(currentUser.getRole())
+                    .gender(currentUser.getGender())
+                    .profileUrl(currentUser.getProfileUrl())
+                    .hobbyList(currentUser.getHobbyList().stream()
+                            .map(UserHobby::getHobby)
+                            .collect(Collectors.toList()))
+                    .createdAt(currentUser.getCreatedAt())
+                    .build();
+
         } catch (Exception e) {
             throw new GeneralException(Code.INTERNAL_ERROR, "프로필 조회 도중 알 수 없는 에러가 발생했습니다.");
         }
 
     }
 
-    public UserProfileUpdateResDto updateProfile(Long userId, UserProfileUpdateReqDto userProfileUpdateReqDto) throws AccessDeniedException {
+    public UserProfileUpdateResDto updateProfile(UserProfileUpdateReqDto userProfileUpdateReqDto) throws AccessDeniedException {
 
         try {
             User currentUser;
@@ -107,25 +104,21 @@ public class UserService {
                 throw new GeneralException(Code.USER_NOT_FOUND, "현재 인증된 회원이 존재하지 않습니다.");
             }
 
-            if ((currentUser.getId()).equals(userId)) {
+            currentUser.updateProfile(
+                    userProfileUpdateReqDto.getNickname(),
+                    userProfileUpdateReqDto.getBirth(),
+                    userProfileUpdateReqDto.getGender(),
+                    userProfileUpdateReqDto.getProfileUrl(),
+                    userProfileUpdateReqDto.getHobbyList(),
+                    true
+            );
 
-                currentUser.updateProfile(
-                        userProfileUpdateReqDto.getNickname(),
-                        userProfileUpdateReqDto.getBirth(),
-                        userProfileUpdateReqDto.getGender(),
-                        userProfileUpdateReqDto.getProfileUrl(),
-                        userProfileUpdateReqDto.getHobbyList(),
-                        true
-                );
+            return UserProfileUpdateResDto.builder()
+                    .userId(currentUser.getId())
+                    .createdAt(currentUser.getCreatedAt())
+                    .updatedAt(currentUser.getUpdatedAt())
+                    .build();
 
-                return UserProfileUpdateResDto.builder()
-                        .userId(userId)
-                        .createdAt(currentUser.getCreatedAt())
-                        .updatedAt(currentUser.getUpdatedAt())
-                        .build();
-            } else {
-                throw new AccessDeniedException("프로필 정보를 수정할 수 있는 권한이 없습니다.");
-            }
         } catch (Exception e) {
             throw new GeneralException(Code.INTERNAL_ERROR, "프로필 수정 도중 알 수 없는 에러가 발생했습니다.");
         }
