@@ -40,15 +40,16 @@ public class UserController {
     }
 
     @GetMapping("/profile")
-    public ResponseDto<UserProfileResDto> getProfile() throws AccessDeniedException {
+    public ResponseDto<UserProfileResDto> getProfile() {
         UserProfileResDto data = userService.getProfile();
         MetaResponseDto meta = new MetaResponseDto(Code.OK, "사용자 프로필을 성공적으로 조회하였습니다.");
         return new ResponseDto<>(meta, Collections.singletonList(data));
     }
 
     @PatchMapping("/profile/update")
-    public ResponseDto<UserProfileUpdateResDto> updateProfile(@RequestBody UserProfileUpdateReqDto userProfileUpdateReqDto) throws AccessDeniedException {
-        UserProfileUpdateResDto data = userService.updateProfile(userProfileUpdateReqDto);
+    public ResponseDto<UserProfileUpdateResDto> updateProfile(@RequestPart(value = "userInfo", required = false) UserProfileUpdateReqDto userProfileUpdateReqDto,
+                                                              @RequestPart(value = "profileImage", required = false) MultipartFile profileImage) {
+        UserProfileUpdateResDto data = userService.updateProfile(userProfileUpdateReqDto, profileImage);
         MetaResponseDto meta = new MetaResponseDto(Code.OK, "사용자 프로필을 성공적으로 수정하였습니다.");
         return new ResponseDto<>(meta, Collections.singletonList(data));
     }

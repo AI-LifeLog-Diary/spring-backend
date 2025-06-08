@@ -14,14 +14,8 @@ import java.util.List;
 @AllArgsConstructor
 public class UserProfileUpdateReqDto {
 
-    @NotBlank(message = "닉네임은 필수입니다.")
     private String nickname;
-    @NotNull(message = "생일은 필수입니다.")
     private LocalDate birth;
-    @NotNull(message = "성별은 필수입니다.")
     private Gender gender;
-    @NotNull(message = "취미 선택은 필수입니다.")
     private List<Hobby> hobbyList;
-    @NotBlank(message = "프로필 사진 선택은 필수입니다.")
-    private String profileUrl;
 }
