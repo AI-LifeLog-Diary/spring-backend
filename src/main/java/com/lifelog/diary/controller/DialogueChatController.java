@@ -29,14 +29,14 @@ public class DialogueChatController {
         return dialogueChatService.streamDialogue(dialogueChatReqDto);
     }
 
-    @GetMapping("/{userId}/chat-list")
+    @GetMapping("/chat-list")
     public ResponseDto<DialogueChatSessionResDto> getChatList(@PathVariable("userId") Long userId) {
         List<DialogueChatSessionResDto> data = dialogueChatService.getChatList(userId);
         MetaResponseDto meta = new MetaResponseDto(Code.OK, "채팅 목록 조회에 성공했습니다.");
         return new ResponseDto<>(meta, data);
     }
 
-    @GetMapping("/{userId}/chat-list/{sessionId}")
+    @GetMapping("/chat-list/{sessionId}")
     public ResponseDto<DialogueChatMessageResDto> getChatDetail(@PathVariable("userId") Long userId,
                                                                 @PathVariable("sessionId") Long sessionId,
                                                                 @RequestParam(required = false) Long cursor,

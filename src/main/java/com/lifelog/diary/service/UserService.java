@@ -72,6 +72,9 @@ public class UserService {
                 throw new GeneralException(Code.USER_NOT_FOUND, "현재 인증된 회원이 존재하지 않습니다.");
             }
 
+            String objectKey = currentUser.getProfileUrl();
+            String presignedUrl = imageService.generatePresignedUrl(objectKey);
+
             return UserProfileResDto.builder()
                     .userId(currentUser.getId())
                     .authProvider(currentUser.getProvider())
@@ -81,7 +84,7 @@ public class UserService {
                     .birth(currentUser.getBirth())
                     .role(currentUser.getRole())
                     .gender(currentUser.getGender())
-                    .profileUrl(currentUser.getProfileUrl())
+                    .profileUrl(presignedUrl)
                     .hobbyList(currentUser.getHobbyList().stream()
                             .map(UserHobby::getHobby)
                             .collect(Collectors.toList()))
@@ -94,37 +97,61 @@ public class UserService {
 
     }
 
-    public UserProfileUpdateResDto updateProfile(UserProfileUpdateReqDto userProfileUpdateReqDto) throws AccessDeniedException {
+    public UserProfileUpdateResDto updateProfile(UserProfileUpdateReqDto userProfileUpdateReqDto, MultipartFile profileImage) {
+
+        User currentUser;
+        try {
+            currentUser = accountService.getCurrentUser();
+        } catch (Exception e) {
+            throw new GeneralException(Code.USER_NOT_FOUND, "현재 인증된 회원이 존재하지 않습니다.");
+        }
+
+        String presignedUrl;
+        String profileUrl = currentUser.getProfileUrl();
+        try {
+            if (profileImage != null && !profileImage.isEmpty()) {
+                profileUrl = imageService.uploadImageToS3(profileImage);
+            }
+            presignedUrl = imageService.generatePresignedUrlFromFullUrl(profileUrl);
+            System.out.println(presignedUrl);
+        } catch (Exception e) {
+            throw new GeneralException(Code.INTERNAL_ERROR, "프로필 이미지 업데이트 중 에러가 발생하였습니다.");
+        }
+
+        //TODO : 변경된 필드 있는지 여부 검증하는 로직 추가
+
+        currentUser.updateProfile(
+                userProfileUpdateReqDto.getNickname(),
+                userProfileUpdateReqDto.getBirth(),
+                userProfileUpdateReqDto.getGender(),
+                profileUrl,
+                userProfileUpdateReqDto.getHobbyList(),
+                true
+        );
 
         try {
-            User currentUser;
-            try {
-                currentUser = accountService.getCurrentUser();
-            } catch (Exception e) {
-                throw new GeneralException(Code.USER_NOT_FOUND, "현재 인증된 회원이 존재하지 않습니다.");
-            }
-
-            currentUser.updateProfile(
-                    userProfileUpdateReqDto.getNickname(),
-                    userProfileUpdateReqDto.getBirth(),
-                    userProfileUpdateReqDto.getGender(),
-                    userProfileUpdateReqDto.getProfileUrl(),
-                    userProfileUpdateReqDto.getHobbyList(),
-                    true
-            );
-
             return UserProfileUpdateResDto.builder()
                     .userId(currentUser.getId())
+                    .authProvider(String.valueOf(currentUser.getProvider()))
+                    .email(currentUser.getEmail())
+                    .username(currentUser.getUsername())
+                    .nickname(currentUser.getNickname())
+                    .birth(currentUser.getBirth())
+                    .role(String.valueOf(currentUser.getRole()))
+                    .gender(String.valueOf(currentUser.getGender()))
+                    .profileUrl(presignedUrl)
+                    .hobbyList(currentUser.getHobbyList().stream()
+                            .map(UserHobby::getHobby)
+                            .collect(Collectors.toList()))
                     .createdAt(currentUser.getCreatedAt())
                     .updatedAt(currentUser.getUpdatedAt())
                     .build();
-
         } catch (Exception e) {
-            throw new GeneralException(Code.INTERNAL_ERROR, "프로필 수정 도중 알 수 없는 에러가 발생했습니다.");
+            throw new GeneralException(Code.INTERNAL_ERROR, "프로필 업데이트 중 오류가 발생하였습니다.");
         }
     }
 
-    public void deleteUser() throws AccessDeniedException {
+    public void deleteUser() {
 
         try {
             User currentUser;

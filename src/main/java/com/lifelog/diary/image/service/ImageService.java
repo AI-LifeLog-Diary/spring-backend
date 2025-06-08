@@ -10,8 +10,17 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
+import software.amazon.awssdk.services.s3.model.GetObjectRequest;
+import software.amazon.awssdk.services.s3.presigner.S3Presigner;
+import software.amazon.awssdk.services.s3.presigner.model.GetObjectPresignRequest;
+import software.amazon.awssdk.services.s3.presigner.model.PresignedGetObjectRequest;
 
 import java.io.IOException;
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.net.URLDecoder;
+import java.nio.charset.StandardCharsets;
+import java.time.Duration;
 import java.util.UUID;
 
 
@@ -20,6 +29,7 @@ import java.util.UUID;
 @Transactional
 public class ImageService {
     private final AmazonS3 amazonS3;
+    private final S3Presigner s3Presigner;
 
     @Value("${cloud.aws.s3.bucket}")
     private String bucketName;
@@ -57,6 +67,37 @@ public class ImageService {
         } catch (Exception e) {
             throw new GeneralException(Code.FILE_UPLOAD_ERROR, "파일을 업로드하는 도중 알 수 없는 오류 발생");
 
+        }
+    }
+
+    public String generatePresignedUrlFromFullUrl(String fullUrl) {
+        try {
+            URL url = new URL(fullUrl);
+            // 버킷 도메인을 제외한 path (앞에 '/' 제거)
+            String path = URLDecoder.decode(url.getPath(), StandardCharsets.UTF_8);
+            String objectKey = path.startsWith("/") ? path.substring(1) : path;
+            System.out.println(objectKey);
+            return generatePresignedUrl(objectKey);
+        } catch (MalformedURLException e) {
+            throw new IllegalArgumentException("잘못된 S3 URL 형식입니다.", e);
+        }
+    }
+
+    public String generatePresignedUrl(String objectKey) {
+        GetObjectRequest getObjectRequest = GetObjectRequest.builder()
+                .bucket(bucketName)
+                .key(objectKey)
+                .build();
+        GetObjectPresignRequest presignRequest = GetObjectPresignRequest.builder()
+                .signatureDuration(Duration.ofMinutes(5))
+                .getObjectRequest(getObjectRequest)
+                .build();
+        try {
+            PresignedGetObjectRequest presignedRequest = s3Presigner.presignGetObject(presignRequest);
+            return presignedRequest.url().toString();
+        } catch (Exception e) {
+            e.printStackTrace();
+            throw new RuntimeException("Presigned URL 생성에 실패하였습니다.", e);
         }
     }
 }
