@@ -1,5 +1,6 @@
 package com.lifelog.diary.service;
 
+import com.lifelog.diary.domain.User;
 import com.lifelog.diary.dto.DiaryReqDto;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -14,7 +15,7 @@ public class ChatService {
     private final DiaryService diaryService;
     private final FollowQuestionService followQuestionService;
 
-    public Flux<String> chatAndCreateDiary(Long userId, String conversation, String currentDiary) {
+    public Flux<String> chatAndCreateDiary(String conversation, String currentDiary, User user) {
         boolean isDiaryPresent = currentDiary != null && !currentDiary.isBlank();
 
         if (isDiaryPresent) {
@@ -22,7 +23,7 @@ public class ChatService {
             return gptService.streamDiaryFromConversation(conversation)
                     .publishOn(Schedulers.boundedElastic())
                     .doOnNext(diaryBuilder::append)
-                    .doOnComplete(() -> diaryService.createDiary(new DiaryReqDto(userId, diaryBuilder.toString())));
+                    .doOnComplete(() -> diaryService.createDiary(user, new DiaryReqDto(diaryBuilder.toString())));
         }
 
         if (conversation == null || conversation.isBlank()) {

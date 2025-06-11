@@ -10,6 +10,5 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @Builder
 public class DiaryReqDto {
-    private Long userId;
     private String content;
 }

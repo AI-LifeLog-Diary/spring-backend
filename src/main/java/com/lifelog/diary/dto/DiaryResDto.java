@@ -11,7 +11,6 @@ import lombok.NoArgsConstructor;
 @Builder
 public class DiaryResDto {
     private Long diaryId;
-    private Long userId;
     private String content;
     private String createdAt;
 }

@@ -7,7 +7,6 @@ import lombok.*;
 @NoArgsConstructor
 @AllArgsConstructor
 public class ChatMessageReqDto {
-    private Long userId;
     private String conversation;
     private String currentDiary;
 }
