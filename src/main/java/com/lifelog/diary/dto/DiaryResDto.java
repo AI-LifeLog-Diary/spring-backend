@@ -12,5 +12,6 @@ import lombok.NoArgsConstructor;
 public class DiaryResDto {
     private Long diaryId;
     private String content;
+    private String imageUrl;
     private String createdAt;
 }

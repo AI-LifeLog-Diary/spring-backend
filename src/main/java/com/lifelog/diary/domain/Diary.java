@@ -21,10 +21,14 @@ public class Diary extends BaseTimeEntity {
     @Column(name = "content", nullable = false)
     private String content;
 
+    @Column(name = "imageUrl")
+    private String imageUrl;
+
     @Builder
-    private Diary(User user, String content) {
+    private Diary(User user, String content, String imageUrl) {
         this.user = user;
         this.content = content;
+        this.imageUrl = imageUrl;
     }
 
 }

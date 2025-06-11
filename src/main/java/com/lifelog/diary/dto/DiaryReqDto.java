@@ -11,4 +11,5 @@ import lombok.NoArgsConstructor;
 @Builder
 public class DiaryReqDto {
     private String content;
+    private String imageUrl;
 }

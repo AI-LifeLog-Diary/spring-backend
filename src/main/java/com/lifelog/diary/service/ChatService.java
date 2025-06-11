@@ -23,7 +23,7 @@ public class ChatService {
             return gptService.streamDiaryFromConversation(conversation)
                     .publishOn(Schedulers.boundedElastic())
                     .doOnNext(diaryBuilder::append)
-                    .doOnComplete(() -> diaryService.createDiary(user, new DiaryReqDto(diaryBuilder.toString())));
+                    .map(token -> "DIARY: " + token);
         }
 
         if (conversation == null || conversation.isBlank()) {

@@ -45,10 +45,11 @@ public class DiaryService {
         return true;
     }
 
-    public DiaryResDto createDiary(User user, DiaryReqDto dto) {
+    public DiaryResDto createDiary(User user, String diaryContent, String imageUrl) {
         Diary diary = Diary.builder()
                 .user(user)
-                .content(dto.getContent())
+                .content(diaryContent)
+                .imageUrl(imageUrl)
                 .build();
 
         Diary savedDiary = diaryRepository.save(diary);

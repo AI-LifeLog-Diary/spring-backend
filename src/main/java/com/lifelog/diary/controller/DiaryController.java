@@ -30,7 +30,9 @@ public class DiaryController {
     public ResponseEntity<ResponseDto<DiaryResDto>> createDiary(
             @RequestBody DiaryReqDto dto
     ) {
-        DiaryResDto diary = diaryService.createDiary(accountService.getCurrentUser(), dto);
+        DiaryResDto diary = diaryService.createDiary(
+                accountService.getCurrentUser(), dto.getContent(), dto.getImageUrl()
+        );
 
         MetaResponseDto meta = new MetaResponseDto(Code.OK, "일기 생성 성공");
         List<DiaryResDto> data = List.of(diary);
