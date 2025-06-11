@@ -6,4 +6,16 @@ public class FileUtil {
     public static boolean isImageFile(String mimeType) {
         return (mimeType != null) && (mimeType.equals("image/jpeg") || mimeType.equals("image/jpg") || mimeType.equals("image/png") );
     }
+
+    public static String getExtensionFromMimeType(String mimeType) {
+        if (mimeType == null) {
+            return "";
+        }
+
+        return switch (mimeType) {
+            case "image/jpeg", "image/jpg" -> ".jpg";
+            case "image/png" -> ".png";
+            default -> "";
+        };
+    }
 }

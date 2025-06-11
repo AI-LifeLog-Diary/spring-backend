@@ -6,6 +6,7 @@ import com.lifelog.diary.common.response.enums.Code;
 import com.lifelog.diary.dto.DiaryReqDto;
 import com.lifelog.diary.dto.DiaryUpdateDto;
 import com.lifelog.diary.dto.DiaryResDto;
+import com.lifelog.diary.service.AccountService;
 import com.lifelog.diary.service.DiaryService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -18,16 +19,20 @@ import java.util.Optional;
 public class DiaryController {
 
     private final DiaryService diaryService;
+    private final AccountService accountService;
 
-    public DiaryController(DiaryService diaryService) {
+    public DiaryController(DiaryService diaryService, AccountService accountService) {
         this.diaryService = diaryService;
+        this.accountService = accountService;
     }
 
     @PostMapping
     public ResponseEntity<ResponseDto<DiaryResDto>> createDiary(
             @RequestBody DiaryReqDto dto
     ) {
-        DiaryResDto diary = diaryService.createDiary(dto);
+        DiaryResDto diary = diaryService.createDiary(
+                accountService.getCurrentUser(), dto.getContent(), dto.getImageUrl()
+        );
 
         MetaResponseDto meta = new MetaResponseDto(Code.OK, "일기 생성 성공");
         List<DiaryResDto> data = List.of(diary);
@@ -50,9 +55,9 @@ public class DiaryController {
         }
     }
 
-    @GetMapping("/user/{userId}")
-    public ResponseEntity<ResponseDto<DiaryResDto>> getDiaries(@PathVariable Long userId) {
-        List<DiaryResDto> diaries = diaryService.getByUserId(userId);
+    @GetMapping("/user")
+    public ResponseEntity<ResponseDto<DiaryResDto>> getDiaries() {
+        List<DiaryResDto> diaries = diaryService.getByUserId(accountService.getCurrentUserId());
         MetaResponseDto meta = new MetaResponseDto(Code.OK, "사용자의 일기 목록 조회 성공");
         return ResponseEntity.ok(new ResponseDto<>(meta, diaries));
     }
