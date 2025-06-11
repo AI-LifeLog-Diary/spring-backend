@@ -2,8 +2,8 @@ package com.lifelog.diary.service;
 
 import com.lifelog.diary.domain.Diary;
 import com.lifelog.diary.domain.User;
-import com.lifelog.diary.dto.DiaryReqDto;
 import com.lifelog.diary.dto.DiaryResDto;
+import com.lifelog.diary.image.service.ImageService;
 import com.lifelog.diary.repository.DiaryRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -16,6 +16,7 @@ import java.util.Optional;
 public class DiaryService {
 
     private final DiaryRepository diaryRepository;
+    private final ImageService imageService;
 
     public Optional<DiaryResDto> getById(Long diaryId) {
         return diaryRepository.findById(String.valueOf(diaryId))
@@ -46,10 +47,12 @@ public class DiaryService {
     }
 
     public DiaryResDto createDiary(User user, String diaryContent, String imageUrl) {
+        String diaryImageUrl = imageService.uploadImageFromUrl(imageUrl);
+
         Diary diary = Diary.builder()
                 .user(user)
                 .content(diaryContent)
-                .imageUrl(imageUrl)
+                .imageUrl(diaryImageUrl)
                 .build();
 
         Diary savedDiary = diaryRepository.save(diary);
@@ -58,9 +61,12 @@ public class DiaryService {
     }
 
     private DiaryResDto convertToDto(Diary diary) {
+        String presignedImageUrl = imageService.generatePresignedUrlFromFullUrl(diary.getImageUrl());
+
         return DiaryResDto.builder()
                 .diaryId(diary.getId())
                 .content(diary.getContent())
+                .imageUrl(presignedImageUrl)
                 .createdAt(diary.getCreatedAt().toString())
                 .build();
     }

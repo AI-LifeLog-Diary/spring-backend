@@ -1,6 +1,7 @@
 package com.lifelog.diary.image.service;
 
 import com.amazonaws.services.s3.AmazonS3;
+import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.lifelog.diary.common.file.FileConstant;
 import com.lifelog.diary.common.file.FileUtil;
 import com.lifelog.diary.common.response.enums.Code;
@@ -16,10 +17,13 @@ import software.amazon.awssdk.services.s3.presigner.model.GetObjectPresignReques
 import software.amazon.awssdk.services.s3.presigner.model.PresignedGetObjectRequest;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.net.URLConnection;
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Paths;
 import java.time.Duration;
 import java.util.UUID;
 
@@ -100,4 +104,44 @@ public class ImageService {
             throw new RuntimeException("Presigned URL 생성에 실패하였습니다.", e);
         }
     }
+
+    public String uploadImageFromUrl(String imageUrl) {
+        try {
+            // 외부 URL에서 이미지 다운로드
+            URL url = new URL(imageUrl);
+            URLConnection connection = url.openConnection();
+            String mimeType = connection.getContentType();
+            long contentLength = connection.getContentLengthLong();
+
+            if (contentLength > FileConstant.MAX_IMAGE_SIZE) {
+                throw new GeneralException(Code.FILE_SIZE_EXCEEDED);
+            }
+
+            if (!FileUtil.isImageFile(mimeType)) {
+                throw new GeneralException(Code.INVALID_FILE_TYPE);
+            }
+
+            String originalFileName = Paths.get(url.getPath()).getFileName().toString();
+            if (originalFileName.isBlank()) {
+                String fileExtension = FileUtil.getExtensionFromMimeType(mimeType);
+                originalFileName = "image" + fileExtension;
+            }
+            String fileName = "diary-images/" + UUID.randomUUID() + originalFileName;
+
+            // S3 업로드
+            try (InputStream inputStream = connection.getInputStream()) {
+                ObjectMetadata metadata = new ObjectMetadata();
+                metadata.setContentLength(contentLength);
+                metadata.setContentType(mimeType);
+
+                amazonS3.putObject(bucketName, fileName, inputStream, metadata);
+            }
+
+            return amazonS3.getUrl(bucketName, fileName).toString();
+
+        } catch (IOException e) {
+            throw new GeneralException(Code.FILE_UPLOAD_ERROR);
+        }
+    }
+
 }
