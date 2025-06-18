@@ -222,7 +222,7 @@ public class DialogueChatService {
         LocalDateTime endOfDay = today.plusDays(1).atStartOfDay();
         Optional<Diary> diary = diaryRepository.findTopByUserAndCreatedAtBetween(user, startOfDay, endOfDay);
 
-        String diaryContent = diary.map(Diary::getContent).orElse("");
+        String diaryContent = diary.map(Diary::getContent).orElse(null);
 
         List<Hobby> hobbyList = user.getHobbyList().stream()
                 .map(UserHobby::getHobby)
