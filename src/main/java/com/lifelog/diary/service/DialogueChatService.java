@@ -4,13 +4,13 @@ import com.lifelog.diary.client.ChatClient;
 import com.lifelog.diary.common.aes.AESUtil;
 import com.lifelog.diary.common.response.enums.Code;
 import com.lifelog.diary.common.response.exception.GeneralException;
-import com.lifelog.diary.domain.DialogueChat;
-import com.lifelog.diary.domain.DialogueChatSession;
-import com.lifelog.diary.domain.User;
+import com.lifelog.diary.domain.*;
 import com.lifelog.diary.domain.enums.ChatRole;
+import com.lifelog.diary.domain.enums.Hobby;
 import com.lifelog.diary.dto.*;
 import com.lifelog.diary.repository.DialogueChatRepository;
 import com.lifelog.diary.repository.DialogueChatSessionRepository;
+import com.lifelog.diary.repository.DiaryRepository;
 import com.lifelog.diary.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
@@ -20,7 +20,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import reactor.core.publisher.Flux;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 
@@ -29,16 +32,17 @@ import java.util.stream.Collectors;
 @Transactional
 public class DialogueChatService {
 
+    private final AccountService accountService;
     private final ChatClient chatClient;
     private final UserRepository userRepository;
     private final DialogueChatRepository dialogueChatRepository;
     private final DialogueChatSessionRepository dialogueChatSessionRepository;
+    private final DiaryRepository diaryRepository;
     private final AESUtil aesUtil;
 
     public Flux<String> streamDialogue(DialogueChatReqDto dialogueChatReqDto) throws Exception {
 
-        User user = userRepository.findById(dialogueChatReqDto.getUserId())
-                .orElseThrow(() -> new GeneralException(Code.USER_NOT_FOUND, "존재하지 않는 사용자입니다."));
+        User user = accountService.getCurrentUser();
 
         DialogueChatSession session;
 
@@ -46,11 +50,15 @@ public class DialogueChatService {
         if (dialogueChatReqDto.getUserInput() == null) {
             session = DialogueChatSession.createChatSession(user);
             dialogueChatSessionRepository.save(session);
+
+            dialogueChatReqDto = getDiaryAndUserInfo(user, dialogueChatReqDto);
         }
         // 두 번째 이후 대화
         else {
             session = dialogueChatSessionRepository.findTopByUserOrderByCreatedAtDesc(user)
                     .orElseThrow(() -> new GeneralException(Code.SESSION_NOT_FOUND, "채팅방이 존재하지 않습니다."));
+
+            dialogueChatReqDto = getDiaryAndUserInfo(user, dialogueChatReqDto);
 
             DialogueChat userChat = DialogueChat.createDialogueChat(
                     user,
@@ -96,6 +104,8 @@ public class DialogueChatService {
                     dialogueChatRepository.save(assistantChat);
                 });
     }
+
+
 
     public List<DialogueChatSessionResDto> getChatList(Long userId) {
 
@@ -172,4 +182,59 @@ public class DialogueChatService {
         }
     }
 
+    public DialogueChatMessageWithNoSessionResDto getChatDetailWithNoSession(Long cursor, int size) {
+
+        try {
+            Long userId = accountService.getCurrentUserId();
+
+            Pageable pageable = PageRequest.of(0, size, Sort.by(Sort.Direction.DESC, "id"));
+
+            List<DialogueChat> messages = (cursor == null)
+                    ? dialogueChatRepository.findByUserIdOrderByIdDesc(userId, pageable)
+                    : dialogueChatRepository.findByUserIdAndIdLessThanOrderByIdDesc(userId, cursor, pageable);
+
+            List<MessageInfoDtoWithNoSessionDto> messageInfoDtoList = messages.stream()
+                    .map(chat -> {
+                        try {
+                            return MessageInfoDtoWithNoSessionDto.from(chat, aesUtil);
+                        } catch (Exception e) {
+                            throw new RuntimeException(e);
+                        }
+                    })
+                    .collect(Collectors.toList());
+
+            Long nextCursor = messageInfoDtoList.isEmpty() ? null : messageInfoDtoList.get(messageInfoDtoList.size() - 1).getMessageId();
+            boolean hasNextPage = nextCursor != null && dialogueChatRepository.existsByIdLessThan(nextCursor);
+
+            return DialogueChatMessageWithNoSessionResDto.builder()
+                    .messages(messageInfoDtoList)
+                    .nextCursor(nextCursor)
+                    .hasNextPage(hasNextPage)
+                    .build();
+        } catch (Exception e) {
+            throw new GeneralException(Code.INTERNAL_ERROR, "채팅 목록 조회 도중 알 수 없는 오류가 발생했습니다.");
+        }
+    }
+
+    private DialogueChatReqDto getDiaryAndUserInfo(User user, DialogueChatReqDto dialogueChatReqDto) {
+        LocalDate today = LocalDate.now();
+        LocalDateTime startOfDay = today.atStartOfDay();
+        LocalDateTime endOfDay = today.plusDays(1).atStartOfDay();
+        Optional<Diary> diary = diaryRepository.findTopByUserAndCreatedAtBetween(user, startOfDay, endOfDay);
+
+        String diaryContent = diary.map(Diary::getContent).orElse("");
+
+        List<Hobby> hobbyList = user.getHobbyList().stream()
+                .map(UserHobby::getHobby)
+                .toList();
+
+        return dialogueChatReqDto.toBuilder()
+                .userId(user.getId())
+                .nickname(user.getNickname())
+                .gender(user.getGender())
+                .hobby(hobbyList)
+                .todayDiary(diaryContent)
+                .userInput(dialogueChatReqDto.getUserInput())
+                .build();
+    }
 }
