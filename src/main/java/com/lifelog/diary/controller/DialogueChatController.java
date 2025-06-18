@@ -4,6 +4,7 @@ import com.lifelog.diary.common.response.dto.MetaResponseDto;
 import com.lifelog.diary.common.response.dto.ResponseDto;
 import com.lifelog.diary.common.response.enums.Code;
 import com.lifelog.diary.dto.DialogueChatMessageResDto;
+import com.lifelog.diary.dto.DialogueChatMessageWithNoSessionResDto;
 import com.lifelog.diary.dto.DialogueChatSessionResDto;
 import com.lifelog.diary.dto.DialogueChatReqDto;
 import com.lifelog.diary.service.DialogueChatService;
@@ -42,6 +43,14 @@ public class DialogueChatController {
                                                                 @RequestParam(required = false) Long cursor,
                                                                 @RequestParam(defaultValue = "5") int size) {
         DialogueChatMessageResDto data = dialogueChatService.getChatDetail(userId, sessionId, cursor, size);
+        MetaResponseDto meta = new MetaResponseDto(Code.OK, "채팅 상세 조회에 성공했습니다.");
+        return new ResponseDto<>(meta, Collections.singletonList(data));
+    }
+
+    @GetMapping("/chat-list/chat-detail")
+    public ResponseDto<DialogueChatMessageWithNoSessionResDto> getChatDetailWithNoSession(@RequestParam(required = false) Long cursor,
+                                                                                          @RequestParam(defaultValue = "5") int size) {
+        DialogueChatMessageWithNoSessionResDto data = dialogueChatService.getChatDetailWithNoSession(cursor, size);
         MetaResponseDto meta = new MetaResponseDto(Code.OK, "채팅 상세 조회에 성공했습니다.");
         return new ResponseDto<>(meta, Collections.singletonList(data));
     }

@@ -16,4 +16,8 @@ public interface DialogueChatRepository extends JpaRepository<DialogueChat, Long
     List<DialogueChat> findByUserIdAndDialogueChatSessionIdAndIdLessThanOrderByIdDesc(Long userId, Long sessionId, Long cursor, Pageable pageable);
     boolean existsByDialogueChatSessionIdAndIdLessThan(Long sessionId, Long cursor);
 
+    List<DialogueChat> findByUserIdOrderByIdDesc(Long userId, Pageable pageable);
+    List<DialogueChat> findByUserIdAndIdLessThanOrderByIdDesc(Long userId, Long cursor, Pageable pageable);
+    boolean existsByIdLessThan(Long cursor);
+
 }
