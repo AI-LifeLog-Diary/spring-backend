@@ -47,7 +47,11 @@ public class DiaryService {
     }
 
     public DiaryResDto createDiary(User user, String diaryContent, String imageUrl) {
-        String diaryImageUrl = imageService.uploadImageFromUrl(imageUrl);
+        String diaryImageUrl = null;
+
+        if (imageUrl != null && !imageUrl.isBlank()) {
+            diaryImageUrl = imageService.uploadImageFromUrl(imageUrl);
+        }
 
         Diary diary = Diary.builder()
                 .user(user)
@@ -61,7 +65,11 @@ public class DiaryService {
     }
 
     private DiaryResDto convertToDto(Diary diary) {
-        String presignedImageUrl = imageService.generatePresignedUrlFromFullUrl(diary.getImageUrl());
+        String presignedImageUrl = null;
+
+        if (diary.getImageUrl() != null && !diary.getImageUrl().isBlank()) {
+            presignedImageUrl = imageService.generatePresignedUrlFromFullUrl(diary.getImageUrl());
+        }
 
         return DiaryResDto.builder()
                 .diaryId(diary.getId())
