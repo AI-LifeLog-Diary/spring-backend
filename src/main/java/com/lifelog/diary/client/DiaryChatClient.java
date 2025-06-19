@@ -24,7 +24,7 @@ public class DiaryChatClient {
                 .uri("/chat/stream-diary")
                 .contentType(MediaType.APPLICATION_JSON)
                 .accept(MediaType.TEXT_EVENT_STREAM)
-                .header("Authorization", accessToken)
+                .header("Authorization", "Bearer " + accessToken)
                 .bodyValue(request)
                 .retrieve()
                 .bodyToFlux(String.class)

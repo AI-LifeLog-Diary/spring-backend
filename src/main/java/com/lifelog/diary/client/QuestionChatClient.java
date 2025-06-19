@@ -22,7 +22,7 @@ public class QuestionChatClient {
                 .uri("/chat/stream-follow-up-question")
                 .contentType(MediaType.APPLICATION_JSON)
                 .accept(MediaType.TEXT_EVENT_STREAM)
-                .header("Authorization", accessToken)
+                .header("Authorization", "Bearer " + accessToken)
                 .bodyValue(request)
                 .retrieve()
                 .bodyToFlux(String.class)
