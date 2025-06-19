@@ -8,6 +8,7 @@ import com.lifelog.diary.dto.DialogueChatMessageWithNoSessionResDto;
 import com.lifelog.diary.dto.DialogueChatSessionResDto;
 import com.lifelog.diary.dto.DialogueChatReqDto;
 import com.lifelog.diary.service.DialogueChatService;
+import com.lifelog.diary.service.DialogueChatWithNoSessionReqDto;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
@@ -28,6 +29,11 @@ public class DialogueChatController {
     @PostMapping(value = "/chat", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
     public Flux<String> streamChatResponse(@RequestBody DialogueChatReqDto dialogueChatReqDto) throws Exception {
         return dialogueChatService.streamDialogue(dialogueChatReqDto);
+    }
+
+    @PostMapping(value = "/chat-request", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+    public Flux<String> streamChatResponseWithNoSession(@RequestBody DialogueChatWithNoSessionReqDto dialogueChatWithNoSessionReqDto) throws Exception {
+        return dialogueChatService.streamDialogueWithNoSession(dialogueChatWithNoSessionReqDto);
     }
 
     @GetMapping("/chat-list")

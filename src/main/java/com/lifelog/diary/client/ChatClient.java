@@ -1,6 +1,7 @@
 package com.lifelog.diary.client;
 
 import com.lifelog.diary.dto.DialogueChatReqDto;
+import com.lifelog.diary.service.DialogueChatWithNoSessionReqDto;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
@@ -21,6 +22,17 @@ public class ChatClient {
                 .contentType(MediaType.APPLICATION_JSON)
                 .accept(MediaType.TEXT_EVENT_STREAM)
                 .bodyValue(dialogueChatReqDto)
+                .retrieve()
+                .bodyToFlux(String.class)
+                .filter(Objects::nonNull);
+    }
+
+    public Flux<String> streamDialogueWithNoSession(DialogueChatWithNoSessionReqDto dialogueChatWithNoSessionReqDto) {
+        return webClient.post()
+                .uri("/stream-dialogue")
+                .contentType(MediaType.APPLICATION_JSON)
+                .accept(MediaType.TEXT_EVENT_STREAM)
+                .bodyValue(dialogueChatWithNoSessionReqDto)
                 .retrieve()
                 .bodyToFlux(String.class)
                 .filter(Objects::nonNull);

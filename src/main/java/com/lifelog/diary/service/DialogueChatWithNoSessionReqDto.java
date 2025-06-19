@@ -1,0 +1,24 @@
+package com.lifelog.diary.service;
+
+import com.lifelog.diary.domain.enums.Gender;
+import com.lifelog.diary.domain.enums.Hobby;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+import java.util.List;
+
+@Data
+@Builder(toBuilder = true)
+@NoArgsConstructor
+@AllArgsConstructor
+public class DialogueChatWithNoSessionReqDto {
+    private Long userId;
+    private String nickname;
+    private Gender gender;
+    private List<Hobby> hobby;
+    private String todayDiary;
+    private String userInput;
+    private boolean newChat;
+}

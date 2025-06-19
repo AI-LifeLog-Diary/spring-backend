@@ -21,14 +21,21 @@ public class DialogueChatSession extends BaseTimeEntity {
     @JoinColumn(name = "user_id")
     private User user;
 
+    @OneToOne
+    @JoinColumn(name = "diary_id")
+    private Diary diary;
+
+
     @Builder
-    private DialogueChatSession(User user) {
+    private DialogueChatSession(User user, Diary diary) {
         this.user = user;
+        this.diary = diary;
     }
 
-    public static DialogueChatSession createChatSession(User user) {
+    public static DialogueChatSession createChatSession(User user, Diary diary) {
         return DialogueChatSession.builder()
                 .user(user)
+                .diary(diary)
                 .build();
     }
 
