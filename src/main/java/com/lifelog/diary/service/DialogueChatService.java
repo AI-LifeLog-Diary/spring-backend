@@ -23,6 +23,7 @@ import reactor.core.publisher.Flux;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
@@ -46,9 +47,11 @@ public class DialogueChatService {
 
         DialogueChatSession session;
 
+        Diary latestDiary = diaryRepository.findTopByUserOrderByCreatedAtDesc(user);
+
         // 첫 대화
         if (dialogueChatReqDto.getUserInput() == null) {
-            session = DialogueChatSession.createChatSession(user);
+            session = DialogueChatSession.createChatSession(user, latestDiary);
             dialogueChatSessionRepository.save(session);
 
             dialogueChatReqDto = getDiaryAndUserInfo(user, dialogueChatReqDto);
@@ -67,7 +70,6 @@ public class DialogueChatService {
                     user.getNickname(),
                     ChatRole.USER
             );
-            System.out.println(userChat.getNickname());
             dialogueChatRepository.save(userChat);
             session.updateTime();
         }
@@ -105,6 +107,81 @@ public class DialogueChatService {
                 });
     }
 
+    public Flux<String> streamDialogueWithNoSession(DialogueChatWithNoSessionReqDto dialogueChatWithNoSessionReqDto) throws Exception {
+
+        User user = accountService.getCurrentUser();
+
+        // 최신 일기 조회
+        Diary latestDiary = diaryRepository.findTopByUserOrderByCreatedAtDesc(user);
+        DialogueChatSession session;
+
+        // 대화형 챗봇 채팅 진입 시
+        if (dialogueChatWithNoSessionReqDto.getUserInput() == null) {
+
+            dialogueChatWithNoSessionReqDto = getDiaryAndUserInfoWithNoSession(user, dialogueChatWithNoSessionReqDto);
+
+            // 가장 최근 채팅 메시지 조회
+            Optional<DialogueChat> latestChat = dialogueChatRepository.findTopByUserOrderByCreatedAtDesc(user);
+            Optional<DialogueChatSession> existingSession = dialogueChatSessionRepository.findTopByUserOrderByCreatedAtDesc(user);
+
+            // 1. 채팅이 아예 없는 경우 → 무조건 세션 생성
+            if (latestChat.isEmpty()) {
+                session = DialogueChatSession.createChatSession(user, latestDiary);
+                dialogueChatSessionRepository.save(session);
+
+                dialogueChatWithNoSessionReqDto = dialogueChatWithNoSessionReqDto.toBuilder()
+                        .todayDiary(latestDiary != null ? latestDiary.getContent() : null)
+                        .newChat(true)
+                        .build();
+
+                return streamWithNoSession(user, session, aesUtil, dialogueChatWithNoSessionReqDto);
+            }
+
+            // 2. 채팅이 있고 diaryId가 같으면 아무 작업 안 함
+            Long latestDiaryId = latestDiary != null ? latestDiary.getId() : null;
+            Long latestChatDiaryId = latestChat
+                    .map(chat -> chat.getDialogueChatSession().getDiary())
+                    .filter(Objects::nonNull)
+                    .map(Diary::getId)
+                    .orElse(null);
+
+            if (Objects.equals(latestDiaryId, latestChatDiaryId)) {
+                return Flux.just("");
+            }
+
+            // 3. 채팅은 있지만 diaryId가 다르면 → 무조건 세션 새로 만들고 인삿말
+            session = DialogueChatSession.createChatSession(user, latestDiary);
+            dialogueChatSessionRepository.save(session);
+
+            dialogueChatWithNoSessionReqDto = dialogueChatWithNoSessionReqDto.toBuilder()
+                    .todayDiary(latestDiary != null ? latestDiary.getContent() : null)
+                    .newChat(true)
+                    .build();
+
+            return streamWithNoSession(user, session, aesUtil, dialogueChatWithNoSessionReqDto);
+
+        }
+
+        // 사용자가 채팅 입력 시
+        else {
+            session = dialogueChatSessionRepository.findTopByUserOrderByCreatedAtDesc(user)
+                    .orElseThrow(() -> new GeneralException(Code.SESSION_NOT_FOUND, "채팅방이 존재하지 않습니다."));
+
+            dialogueChatWithNoSessionReqDto = getDiaryAndUserInfoWithNoSession(user, dialogueChatWithNoSessionReqDto);
+
+            DialogueChat userChat = DialogueChat.createDialogueChat(
+                    user,
+                    session,
+                    aesUtil.encrypt(dialogueChatWithNoSessionReqDto.getUserInput()),
+                    user.getNickname(),
+                    ChatRole.USER
+            );
+            dialogueChatRepository.save(userChat);
+            session.updateTime();
+        }
+
+        return streamWithNoSession(user, session, aesUtil, dialogueChatWithNoSessionReqDto);
+    }
 
 
     public List<DialogueChatSessionResDto> getChatList(Long userId) {
@@ -236,5 +313,60 @@ public class DialogueChatService {
                 .todayDiary(diaryContent)
                 .userInput(dialogueChatReqDto.getUserInput())
                 .build();
+    }
+
+    private DialogueChatWithNoSessionReqDto getDiaryAndUserInfoWithNoSession(User user, DialogueChatWithNoSessionReqDto dialogueChatWithNoSessionReqDto) {
+        LocalDate today = LocalDate.now();
+        LocalDateTime startOfDay = today.atStartOfDay();
+        LocalDateTime endOfDay = today.plusDays(1).atStartOfDay();
+        Optional<Diary> diary = diaryRepository.findTopByUserAndCreatedAtBetween(user, startOfDay, endOfDay);
+
+        String diaryContent = diary.map(Diary::getContent).orElse(null);
+
+        List<Hobby> hobbyList = user.getHobbyList().stream()
+                .map(UserHobby::getHobby)
+                .toList();
+
+        return dialogueChatWithNoSessionReqDto.toBuilder()
+                .userId(user.getId())
+                .nickname(user.getNickname())
+                .gender(user.getGender())
+                .hobby(hobbyList)
+                .todayDiary(diaryContent)
+                .userInput(dialogueChatWithNoSessionReqDto.getUserInput())
+                .newChat(false)
+                .build();
+    }
+
+    private Flux<String> streamWithNoSession(User user, DialogueChatSession session, AESUtil aesUtil, DialogueChatWithNoSessionReqDto dialogueChatWithNoSessionReqDto) {
+        // 공통 stream 로직
+        StringBuilder buffer = new StringBuilder();
+
+        return chatClient.streamDialogueWithNoSession(dialogueChatWithNoSessionReqDto)
+                .doOnNext(chunk -> {
+                    String clean = chunk
+                            .replaceFirst("^data:data:", "")
+                            .replaceFirst("^data:", "")
+                            .strip();
+                    if (clean.matches("^\\s{2,}.*")) {
+                        clean = " " + clean.trim();
+                    }
+                    buffer.append(clean);
+                })
+                .doOnComplete(() -> {
+                    try {
+                        DialogueChat assistantChat = DialogueChat.createDialogueChat(
+                                user,
+                                session,
+                                aesUtil.encrypt(buffer.toString()),
+                                "챗봇",
+                                ChatRole.ASSISTANT
+                        );
+                        dialogueChatRepository.save(assistantChat);
+                    } catch (Exception e) {
+                        throw new RuntimeException(e);
+                    }
+                });
+
     }
 }

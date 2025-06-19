@@ -14,5 +14,6 @@ import java.util.Optional;
 public interface DiaryRepository extends JpaRepository<Diary, String> {
     List<Diary> findByUserId(Long userId);
     Optional<Diary> findTopByUserAndCreatedAtBetween(User user, LocalDateTime start, LocalDateTime end);
+    Diary findTopByUserOrderByCreatedAtDesc(User user);
 }
 

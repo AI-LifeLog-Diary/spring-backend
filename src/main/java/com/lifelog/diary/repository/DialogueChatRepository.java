@@ -2,11 +2,15 @@ package com.lifelog.diary.repository;
 
 import com.lifelog.diary.domain.DialogueChat;
 import com.lifelog.diary.domain.DialogueChatSession;
+import com.lifelog.diary.domain.User;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface DialogueChatRepository extends JpaRepository<DialogueChat, Long> {
@@ -19,5 +23,8 @@ public interface DialogueChatRepository extends JpaRepository<DialogueChat, Long
     List<DialogueChat> findByUserIdOrderByIdDesc(Long userId, Pageable pageable);
     List<DialogueChat> findByUserIdAndIdLessThanOrderByIdDesc(Long userId, Long cursor, Pageable pageable);
     boolean existsByIdLessThan(Long cursor);
+
+    Optional<DialogueChat> findTopByUserOrderByCreatedAtDesc(User user);
+    boolean existsByUserAndCreatedAtBetween(User user, LocalDateTime start, LocalDateTime end);
 
 }
