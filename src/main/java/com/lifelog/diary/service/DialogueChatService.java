@@ -16,9 +16,15 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.ReactiveSecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
+import reactor.core.scheduler.Schedulers;
+import reactor.util.function.Tuples;
+import lombok.extern.slf4j.Slf4j;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -29,6 +35,7 @@ import java.util.stream.Collectors;
 
 
 @Service
+@Slf4j
 @RequiredArgsConstructor
 public class DialogueChatService {
 
@@ -106,85 +113,92 @@ public class DialogueChatService {
                 });
     }
 
-    public Flux<String> streamDialogueWithNoSession(DialogueChatWithNoSessionReqDto dialogueChatWithNoSessionReqDto) throws Exception {
-
+    public Flux<String> streamDialogueWithNoSession(DialogueChatWithNoSessionReqDto dto) {
         User user = accountService.getCurrentUser();
 
-        // 최신 일기 조회
-        Diary latestDiary = diaryRepository.findTopByUserOrderByCreatedAtDesc(user);
+        return Mono.fromCallable(() -> {
 
-        if (latestDiary==null) {
-            throw new GeneralException(Code.DIARY_NOT_FOUND, "최근 일기가 존재하지 않습니다.");
-        }
-        DialogueChatSession session;
+                    Diary latestDiary = diaryRepository.findTopByUserOrderByCreatedAtDesc(user);
 
-        // 대화형 챗봇 채팅 진입 시
-        if (dialogueChatWithNoSessionReqDto.getUserInput() == null) {
+                    if (latestDiary == null) {
+                        throw new GeneralException(Code.DIARY_NOT_FOUND, "최근 일기가 존재하지 않습니다.");
+                    }
 
-            dialogueChatWithNoSessionReqDto = getDiaryAndUserInfoWithNoSession(user, dialogueChatWithNoSessionReqDto);
+                    DialogueChatSession session;
 
-            // 가장 최근 채팅 메시지 조회
-            Optional<DialogueChat> latestChat = dialogueChatRepository.findTopByUserOrderByCreatedAtDesc(user);
-            Optional<DialogueChatSession> existingSession = dialogueChatSessionRepository.findTopByUserOrderByCreatedAtDesc(user);
+                    if (dto.getUserInput() == null) {
+                        DialogueChatWithNoSessionReqDto updatedDto = getDiaryAndUserInfoWithNoSession(user, dto);
+                        Optional<DialogueChat> latestChat = dialogueChatRepository.findTopByUserOrderByCreatedAtDesc(user);
 
-            // 1. 채팅이 아예 없는 경우 → 무조건 세션 생성
-            if (latestChat.isEmpty()) {
-                session = DialogueChatSession.createChatSession(user, latestDiary);
-                dialogueChatSessionRepository.save(session);
+                        if (latestChat.isEmpty()) {
+                            session = DialogueChatSession.createChatSession(user, latestDiary);
+                            dialogueChatSessionRepository.save(session);
 
-                dialogueChatWithNoSessionReqDto = dialogueChatWithNoSessionReqDto.toBuilder()
-                        .todayDiary(latestDiary != null ? latestDiary.getContent() : null)
-                        .newChat(true)
-                        .build();
+                            updatedDto = updatedDto.toBuilder()
+                                    .todayDiary(latestDiary.getContent())
+                                    .newChat(true)
+                                    .build();
 
-                return streamWithNoSession(user, session, aesUtil, dialogueChatWithNoSessionReqDto);
-            }
+                            return Tuples.of(user, session, updatedDto);
+                        }
 
-            // 2. 채팅이 있고 diaryId가 같으면 아무 작업 안 함
-            Long latestDiaryId = latestDiary != null ? latestDiary.getId() : null;
-            Long latestChatDiaryId = latestChat
-                    .map(chat -> chat.getDialogueChatSession().getDiary())
-                    .filter(Objects::nonNull)
-                    .map(Diary::getId)
-                    .orElse(null);
+                        Long latestDiaryId = latestDiary.getId();
+                        Long latestChatDiaryId = latestChat
+                                .map(chat -> chat.getDialogueChatSession().getDiary())
+                                .filter(Objects::nonNull)
+                                .map(Diary::getId)
+                                .orElse(null);
 
-            if (Objects.equals(latestDiaryId, latestChatDiaryId)) {
-                return Flux.just("");
-            }
+                        if (Objects.equals(latestDiaryId, latestChatDiaryId)) {
+                            throw new GeneralException(Code.DUPLICATE_SESSION, "이미 최신 일기에 대한 세션이 존재합니다.");
+                        }
 
-            // 3. 채팅은 있지만 diaryId가 다르면 → 무조건 세션 새로 만들고 인삿말
-            session = DialogueChatSession.createChatSession(user, latestDiary);
-            dialogueChatSessionRepository.save(session);
+                        session = DialogueChatSession.createChatSession(user, latestDiary);
+                        dialogueChatSessionRepository.save(session);
 
-            dialogueChatWithNoSessionReqDto = dialogueChatWithNoSessionReqDto.toBuilder()
-                    .todayDiary(latestDiary != null ? latestDiary.getContent() : null)
-                    .newChat(true)
-                    .build();
+                        updatedDto = updatedDto.toBuilder()
+                                .todayDiary(latestDiary.getContent())
+                                .newChat(true)
+                                .build();
 
-            return streamWithNoSession(user, session, aesUtil, dialogueChatWithNoSessionReqDto);
+                        return Tuples.of(user, session, updatedDto);
 
-        }
+                    } else {
+                        session = dialogueChatSessionRepository.findTopByUserOrderByCreatedAtDesc(user)
+                                .orElseThrow(() -> new GeneralException(Code.SESSION_NOT_FOUND, "채팅방이 존재하지 않습니다."));
 
-        // 사용자가 채팅 입력 시
-        else {
-            session = dialogueChatSessionRepository.findTopByUserOrderByCreatedAtDesc(user)
-                    .orElseThrow(() -> new GeneralException(Code.SESSION_NOT_FOUND, "채팅방이 존재하지 않습니다."));
+                        DialogueChatWithNoSessionReqDto updatedDto = getDiaryAndUserInfoWithNoSession(user, dto);
 
-            dialogueChatWithNoSessionReqDto = getDiaryAndUserInfoWithNoSession(user, dialogueChatWithNoSessionReqDto);
+                        DialogueChat userChat = DialogueChat.createDialogueChat(
+                                user,
+                                session,
+                                aesUtil.encrypt(updatedDto.getUserInput()),
+                                user.getNickname(),
+                                ChatRole.USER
+                        );
+                        dialogueChatRepository.save(userChat);
+                        session.updateTime();
 
-            DialogueChat userChat = DialogueChat.createDialogueChat(
-                    user,
-                    session,
-                    aesUtil.encrypt(dialogueChatWithNoSessionReqDto.getUserInput()),
-                    user.getNickname(),
-                    ChatRole.USER
-            );
-            dialogueChatRepository.save(userChat);
-            session.updateTime();
-        }
+                        return Tuples.of(user, session, updatedDto);
+                    }
+                })
+                .subscribeOn(Schedulers.boundedElastic())
+                .flatMapMany(tuple -> {
+                    User u = tuple.getT1();
+                    DialogueChatSession session = tuple.getT2();
+                    DialogueChatWithNoSessionReqDto updatedDto = tuple.getT3();
 
-        return streamWithNoSession(user, session, aesUtil, dialogueChatWithNoSessionReqDto);
+                    return streamWithNoSession(u, session, aesUtil, updatedDto)
+                            .switchIfEmpty(Flux.just("챗봇 응답이 없습니다."));
+                })
+                .onErrorResume(ex -> {
+                    String message = (ex instanceof GeneralException)
+                            ? ((GeneralException) ex).getMessage()
+                            : "알 수 없는 오류가 발생했습니다.";
+                    return Flux.just("error: " + message);
+                });
     }
+
 
     @Transactional
     public List<DialogueChatSessionResDto> getChatList(Long userId) {
@@ -342,12 +356,11 @@ public class DialogueChatService {
                 .build();
     }
 
-    private Flux<String> streamWithNoSession(User user, DialogueChatSession session, AESUtil aesUtil, DialogueChatWithNoSessionReqDto dialogueChatWithNoSessionReqDto) {
-        // 공통 stream 로직
+    private Flux<String> streamWithNoSession(User user, DialogueChatSession session, AESUtil aesUtil, DialogueChatWithNoSessionReqDto dto) {
         StringBuilder buffer = new StringBuilder();
 
-        return chatClient.streamDialogueWithNoSession(dialogueChatWithNoSessionReqDto)
-                .doOnNext(chunk -> {
+        return chatClient.streamDialogueWithNoSession(dto)
+                .map(chunk -> {
                     String clean = chunk
                             .replaceFirst("^data:data:", "")
                             .replaceFirst("^data:", "")
@@ -356,21 +369,29 @@ public class DialogueChatService {
                         clean = " " + clean.trim();
                     }
                     buffer.append(clean);
+                    return clean;
                 })
-                .doOnComplete(() -> {
-                    try {
-                        DialogueChat assistantChat = DialogueChat.createDialogueChat(
-                                user,
-                                session,
-                                aesUtil.encrypt(buffer.toString()),
-                                "챗봇",
-                                ChatRole.ASSISTANT
-                        );
-                        dialogueChatRepository.save(assistantChat);
-                    } catch (Exception e) {
-                        throw new RuntimeException(e);
-                    }
-                });
-
+                .onErrorResume(e -> {
+                    log.error("stream 중 에러 발생", e);
+                    return Flux.just("error: 챗봇 응답 도중 오류가 발생했습니다.");
+                })
+                .concatWith(
+                        Mono.fromRunnable(() -> {
+                            try {
+                                DialogueChat assistantChat = DialogueChat.createDialogueChat(
+                                        user,
+                                        session,
+                                        aesUtil.encrypt(buffer.toString()),
+                                        "챗봇",
+                                        ChatRole.ASSISTANT
+                                );
+                                dialogueChatRepository.save(assistantChat);
+                            } catch (Exception e) {
+                                log.error("Assistant 메시지 저장 실패", e);
+                            }
+                        }).subscribeOn(Schedulers.boundedElastic()).thenMany(Flux.empty())
+                );
     }
+
+
 }
