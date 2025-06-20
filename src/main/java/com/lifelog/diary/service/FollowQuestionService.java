@@ -11,7 +11,7 @@ public class FollowQuestionService {
 
     private final QuestionChatClient questionChatClient;
 
-    public Flux<String> streamFollowUpQuestionFromConversation(String conversation, String accessToken) {
-        return questionChatClient.streamFollowUpQuestion(conversation, accessToken);
+    public Flux<String> streamFollowUpQuestionFromConversation(String conversation) {
+        return questionChatClient.streamFollowUpQuestion(conversation);
     }
 }
