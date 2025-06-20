@@ -42,7 +42,8 @@ public enum Code {
 
     /*비즈니스 오류 (EBxxx)*/
     SESSION_NOT_FOUND(HttpStatus.NOT_FOUND.value(), "EB001", "존재하지 않는 세션입니다."),
-    DIARY_NOT_FOUND(HttpStatus.NOT_FOUND.value(), "EB002", "존재하지 않는 세션입니다.");
+    DIARY_NOT_FOUND(HttpStatus.NOT_FOUND.value(), "EB002", "존재하지 않는 세션입니다."),
+    DUPLICATE_SESSION(HttpStatus.ALREADY_REPORTED.value(), "EB003","이미 존재하는 세션입니다.");
 
     private final int status;
     private final String code;
