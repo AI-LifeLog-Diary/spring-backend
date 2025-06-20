@@ -30,7 +30,6 @@ import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
-@Transactional
 public class DialogueChatService {
 
     private final AccountService accountService;
@@ -183,7 +182,7 @@ public class DialogueChatService {
         return streamWithNoSession(user, session, aesUtil, dialogueChatWithNoSessionReqDto);
     }
 
-
+    @Transactional
     public List<DialogueChatSessionResDto> getChatList(Long userId) {
 
         try {
@@ -226,7 +225,7 @@ public class DialogueChatService {
 
     }
 
-
+    @Transactional
     public DialogueChatMessageResDto getChatDetail(Long userId, Long sessionId, Long cursor, int size) {
 
         try {
@@ -259,6 +258,7 @@ public class DialogueChatService {
         }
     }
 
+    @Transactional
     public DialogueChatMessageWithNoSessionResDto getChatDetailWithNoSession(Long cursor, int size) {
 
         try {
