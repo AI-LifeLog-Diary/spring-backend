@@ -8,7 +8,7 @@ import com.lifelog.diary.dto.DialogueChatMessageWithNoSessionResDto;
 import com.lifelog.diary.dto.DialogueChatSessionResDto;
 import com.lifelog.diary.dto.DialogueChatReqDto;
 import com.lifelog.diary.service.DialogueChatService;
-import com.lifelog.diary.service.DialogueChatWithNoSessionReqDto;
+import com.lifelog.diary.dto.DialogueChatWithNoSessionReqDto;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;

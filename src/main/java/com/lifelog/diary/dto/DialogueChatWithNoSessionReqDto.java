@@ -1,4 +1,4 @@
-package com.lifelog.diary.service;
+package com.lifelog.diary.dto;
 
 import com.lifelog.diary.domain.enums.Gender;
 import com.lifelog.diary.domain.enums.Hobby;

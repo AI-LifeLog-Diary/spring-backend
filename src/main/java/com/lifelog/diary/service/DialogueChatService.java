@@ -112,6 +112,10 @@ public class DialogueChatService {
 
         // 최신 일기 조회
         Diary latestDiary = diaryRepository.findTopByUserOrderByCreatedAtDesc(user);
+
+        if (latestDiary==null) {
+            throw new GeneralException(Code.DIARY_NOT_FOUND, "최근 일기가 존재하지 않습니다.");
+        }
         DialogueChatSession session;
 
         // 대화형 챗봇 채팅 진입 시

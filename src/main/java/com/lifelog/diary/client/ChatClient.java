@@ -1,7 +1,7 @@
 package com.lifelog.diary.client;
 
 import com.lifelog.diary.dto.DialogueChatReqDto;
-import com.lifelog.diary.service.DialogueChatWithNoSessionReqDto;
+import com.lifelog.diary.dto.DialogueChatWithNoSessionReqDto;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
