@@ -106,6 +106,10 @@ public class UserService {
             throw new GeneralException(Code.USER_NOT_FOUND, "현재 인증된 회원이 존재하지 않습니다.");
         }
 
+        if (userProfileUpdateReqDto == null && profileImage.isEmpty()) {
+            throw new GeneralException(Code.INVALID_INPUT_VALUE, "프로필 수정 요청 정보가 존재하지 않습니다.");
+        }
+
         String presignedUrl;
         String profileUrl = currentUser.getProfileUrl();
         try {
@@ -120,16 +124,21 @@ public class UserService {
 
         //TODO : 변경된 필드 있는지 여부 검증하는 로직 추가
 
-        currentUser.updateProfile(
-                userProfileUpdateReqDto.getNickname(),
-                userProfileUpdateReqDto.getBirth(),
-                userProfileUpdateReqDto.getGender(),
-                profileUrl,
-                userProfileUpdateReqDto.getHobbyList(),
-                true
-        );
 
         try {
+
+            if (userProfileUpdateReqDto!=null) {
+                currentUser.updateProfile(
+                        userProfileUpdateReqDto.getNickname(),
+                        userProfileUpdateReqDto.getBirth(),
+                        userProfileUpdateReqDto.getGender(),
+                        profileUrl,
+                        userProfileUpdateReqDto.getHobbyList(),
+                        true
+                );
+            }
+
+
             return UserProfileUpdateResDto.builder()
                     .userId(currentUser.getId())
                     .authProvider(String.valueOf(currentUser.getProvider()))
