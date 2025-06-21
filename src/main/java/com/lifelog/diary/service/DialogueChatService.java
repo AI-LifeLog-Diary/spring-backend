@@ -126,10 +126,12 @@ public class DialogueChatService {
 
                     DialogueChatSession session;
 
+                    // 사용자 입력 없이 채팅방 조회하는 경우
                     if (dto.getUserInput() == null) {
                         DialogueChatWithNoSessionReqDto updatedDto = getDiaryAndUserInfoWithNoSession(user, dto);
                         Optional<DialogueChat> latestChat = dialogueChatRepository.findTopByUserOrderByCreatedAtDesc(user);
 
+                        // 1: 첫 대화 진입 (dto.getUserInput() == null) + 이전 대화가 없음
                         if (latestChat.isEmpty()) {
                             session = DialogueChatSession.createChatSession(user, latestDiary);
                             dialogueChatSessionRepository.save(session);
@@ -149,10 +151,12 @@ public class DialogueChatService {
                                 .map(Diary::getId)
                                 .orElse(null);
 
+                        // 2: 첫 대화 진입 (dto.getUserInput() == null) + 최신 일기와 이미 연결된 세션 존재
                         if (Objects.equals(latestDiaryId, latestChatDiaryId)) {
                             throw new GeneralException(Code.DUPLICATE_SESSION, "이미 최신 일기에 대한 세션이 존재합니다.");
                         }
 
+                        // 3: 첫 대화 진입 (dto.getUserInput() == null) + 최신 일기로 된 세션은 없음
                         session = DialogueChatSession.createChatSession(user, latestDiary);
                         dialogueChatSessionRepository.save(session);
 
@@ -163,7 +167,11 @@ public class DialogueChatService {
 
                         return Tuples.of(user, session, updatedDto);
 
-                    } else {
+
+                    }
+
+                    // 사용자 입력이 있는 경우
+                    else {
                         session = dialogueChatSessionRepository.findTopByUserOrderByCreatedAtDesc(user)
                                 .orElseThrow(() -> new GeneralException(Code.SESSION_NOT_FOUND, "채팅방이 존재하지 않습니다."));
 
@@ -334,12 +342,9 @@ public class DialogueChatService {
     }
 
     private DialogueChatWithNoSessionReqDto getDiaryAndUserInfoWithNoSession(User user, DialogueChatWithNoSessionReqDto dialogueChatWithNoSessionReqDto) {
-        LocalDate today = LocalDate.now();
-        LocalDateTime startOfDay = today.atStartOfDay();
-        LocalDateTime endOfDay = today.plusDays(1).atStartOfDay();
-        Optional<Diary> diary = diaryRepository.findTopByUserAndCreatedAtBetween(user, startOfDay, endOfDay);
 
-        String diaryContent = diary.map(Diary::getContent).orElse(null);
+        Diary latestDiary = diaryRepository.findTopByUserOrderByCreatedAtDesc(user);
+        String diaryContent = (latestDiary != null) ? latestDiary.getContent() : null;
 
         List<Hobby> hobbyList = user.getHobbyList().stream()
                 .map(UserHobby::getHobby)
