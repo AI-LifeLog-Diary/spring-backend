@@ -19,19 +19,11 @@ public class ChatService {
     private final GPTService gptService;
     private final FollowQuestionService followQuestionService;
     private final UserRepository userRepository;
+    private final AccountService accountService;
 
     public Flux<String> chatAndCreateDiary(String conversation, String currentDiary) {
-        return ReactiveSecurityContextHolder.getContext()
-                .map(ctx -> ctx.getAuthentication().getName())
-                .flatMap(username ->
-                        Mono.fromCallable(() -> {
-                            User user = userRepository.findByUsername(username);
-                            if (user == null) {
-                                throw new GeneralException(Code.USER_NOT_FOUND, "사용자를 찾을 수 없습니다.");
-                            }
-                            return user;
-                        }).subscribeOn(Schedulers.boundedElastic())
-                )
+        return Mono.fromCallable(accountService::getCurrentUser)
+                .subscribeOn(Schedulers.boundedElastic())
                 .flatMapMany(user -> {
                     boolean isDiaryPresent = currentDiary != null && !currentDiary.isBlank();
 
