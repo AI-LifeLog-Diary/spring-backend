@@ -1,5 +1,6 @@
 package com.lifelog.diary.client;
 
+import com.lifelog.diary.security.util.SecurityUtil;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.MediaType;
 import org.springframework.security.core.Authentication;
@@ -17,17 +18,18 @@ public class DiaryChatClient {
 
     private final WebClient webClient;
 
-    public Flux<String> streamDiary(String conversation) {
+    public String getDiary(String conversation) {
         Map<String, String> request = Map.of("conversation", conversation);
 
         return webClient.post()
-                .uri("/chat/stream-diary")
+                .uri("/chat/diary")
                 .contentType(MediaType.APPLICATION_JSON)
-                .accept(MediaType.TEXT_EVENT_STREAM)
+                .accept(MediaType.APPLICATION_JSON)
+                .headers(headers -> headers.setBearerAuth(Objects.requireNonNull(SecurityUtil.getCurrentAccessToken())))
                 .bodyValue(request)
                 .retrieve()
-                .bodyToFlux(String.class)
-                .filter(Objects::nonNull);
+                .bodyToMono(String.class)
+                .block();
     }
 }
 
