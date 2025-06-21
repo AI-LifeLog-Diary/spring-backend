@@ -17,14 +17,13 @@ public class DiaryChatClient {
 
     private final WebClient webClient;
 
-    public Flux<String> streamDiary(String conversation, String accessToken) {
+    public Flux<String> streamDiary(String conversation) {
         Map<String, String> request = Map.of("conversation", conversation);
 
         return webClient.post()
                 .uri("/chat/stream-diary")
                 .contentType(MediaType.APPLICATION_JSON)
                 .accept(MediaType.TEXT_EVENT_STREAM)
-                .header("Authorization", "Bearer " + accessToken)
                 .bodyValue(request)
                 .retrieve()
                 .bodyToFlux(String.class)
