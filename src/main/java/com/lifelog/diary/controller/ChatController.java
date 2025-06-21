@@ -2,6 +2,7 @@ package com.lifelog.diary.controller;
 
 import com.lifelog.diary.domain.User;
 import com.lifelog.diary.dto.ChatMessageReqDto;
+import com.lifelog.diary.dto.ChatMessageResDto;
 import com.lifelog.diary.service.AccountService;
 import com.lifelog.diary.service.ChatService;
 import lombok.RequiredArgsConstructor;
@@ -22,32 +23,13 @@ public class ChatController {
     private final ChatService chatService;
     private final AccountService accountService;
 
-//    @PostMapping(value = "/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
-//    public Flux<String> streamDiaryFromConversation(
-//            @RequestBody ChatMessageReqDto reqDto) {
-//        return Mono.fromCallable(accountService::getCurrentUser)
-//                .subscribeOn(Schedulers.boundedElastic())
-//                .flatMapMany(user -> chatService.chatAndCreateDiary(
-//                        reqDto.getConversation(),
-//                        reqDto.getCurrentDiary()
-//                ));
-//    }
-
-    @PostMapping(value = "/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
-    public Flux<String> streamDiaryFromConversation(@RequestBody ChatMessageReqDto reqDto) {
-        return ReactiveSecurityContextHolder.getContext()
-                .flatMapMany(ctx -> Flux.defer(() -> {
-                    SecurityContextHolder.setContext(ctx);
-                    try {
-                        User user = accountService.getCurrentUser();
-                        return chatService.chatAndCreateDiary(
-                                reqDto.getConversation(),
-                                reqDto.getCurrentDiary(),
-                                user
-                        );
-                    } finally {
-                        SecurityContextHolder.clearContext();
-                    }
-                }).subscribeOn(Schedulers.boundedElastic()));
+    @PostMapping("/stream")
+    public ChatMessageResDto streamDiaryFromConversation(@RequestBody ChatMessageReqDto reqDto) {
+        User user = accountService.getCurrentUser(); // 정상 작동 확인된 인증 방식 사용
+        return chatService.chatAndCreateDiary(
+                reqDto.getConversation(),
+                reqDto.getCurrentDiary(),
+                user
+        );
     }
 }

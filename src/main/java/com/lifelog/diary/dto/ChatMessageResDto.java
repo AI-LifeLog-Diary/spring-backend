@@ -9,6 +9,5 @@ import lombok.*;
 public class ChatMessageResDto {
     private String followUpQuestion;
     private String diaryContent;
-    private DiaryResDto diary;
 }
 
