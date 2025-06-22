@@ -38,10 +38,24 @@ public class DiaryService {
                 });
     }
 
-    public boolean delete(String diaryId) {
-        if (!diaryRepository.existsById(diaryId)) {
+    public boolean delete(String diaryId, User currentUser) {
+//        if (!diaryRepository.existsById(diaryId)) {
+//            return false;
+//        }
+//        diaryRepository.deleteById(diaryId);
+//        return true;
+        Optional<Diary> optionalDiary = diaryRepository.findById(diaryId);
+
+        if (optionalDiary.isEmpty()) {
             return false;
         }
+
+        Diary diary = optionalDiary.get();
+
+        if (!diary.getUser().getId().equals(currentUser.getId())) {
+            return false;
+        }
+
         diaryRepository.deleteById(diaryId);
         return true;
     }
