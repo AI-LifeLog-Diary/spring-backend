@@ -11,7 +11,7 @@ public class GPTService {
 
     private final DiaryChatClient diaryChatClient;
 
-    public Flux<String> streamDiaryFromConversation(String conversation) {
-        return diaryChatClient.streamDiary(conversation);
+    public String createDiaryFromConversation(String conversation, String currentDiary) {
+        return diaryChatClient.getDiary(conversation, currentDiary);
     }
 }

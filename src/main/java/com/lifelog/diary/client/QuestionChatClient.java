@@ -1,5 +1,6 @@
 package com.lifelog.diary.client;
 
+import com.lifelog.diary.security.util.SecurityUtil;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
@@ -15,17 +16,18 @@ public class QuestionChatClient {
 
     private final WebClient webClient;
 
-    public Flux<String> streamFollowUpQuestion(String conversation) {
+    public String getFollowUpQuestion(String conversation) {
         Map<String, String> request = Map.of("conversation", conversation);
 
         return webClient.post()
-                .uri("/chat/stream-follow-up-question")
+                .uri("/chat/follow-up-question")
                 .contentType(MediaType.APPLICATION_JSON)
-                .accept(MediaType.TEXT_EVENT_STREAM)
+                .accept(MediaType.APPLICATION_JSON)
+                .headers(headers -> headers.setBearerAuth(Objects.requireNonNull(SecurityUtil.getCurrentAccessToken())))
                 .bodyValue(request)
                 .retrieve()
-                .bodyToFlux(String.class)
-                .filter(Objects::nonNull);
+                .bodyToMono(String.class)
+                .block();
     }
 }
 

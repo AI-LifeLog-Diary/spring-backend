@@ -3,6 +3,7 @@ package com.lifelog.diary.controller;
 import com.lifelog.diary.common.response.dto.MetaResponseDto;
 import com.lifelog.diary.common.response.dto.ResponseDto;
 import com.lifelog.diary.common.response.enums.Code;
+import com.lifelog.diary.domain.User;
 import com.lifelog.diary.dto.DiaryReqDto;
 import com.lifelog.diary.dto.DiaryUpdateDto;
 import com.lifelog.diary.dto.DiaryResDto;
@@ -82,12 +83,14 @@ public class DiaryController {
 
     @DeleteMapping("/{diaryId}")
     public ResponseEntity<ResponseDto<Void>> deleteDiary(@PathVariable String diaryId) {
-        boolean deleted = diaryService.delete(diaryId);
+        User currentUser = accountService.getCurrentUser();
+
+        boolean deleted = diaryService.delete(diaryId, currentUser);
         if (deleted) {
             MetaResponseDto meta = new MetaResponseDto(Code.OK, "일기 삭제 성공");
             return ResponseEntity.ok(new ResponseDto<>(meta, null));
         }
-        MetaResponseDto meta = new MetaResponseDto(Code.NOT_FOUND, "삭제할 일기를 찾을 수 없습니다.");
+        MetaResponseDto meta = new MetaResponseDto(Code.NOT_FOUND, "삭제 권한이 없거나 일기를 찾을 수 없습니다.");
         return ResponseEntity.status(meta.getStatus()).body(new ResponseDto<>(meta, null));
     }
 
