@@ -18,8 +18,11 @@ public class DiaryChatClient {
 
     private final WebClient webClient;
 
-    public String getDiary(String conversation) {
-        Map<String, String> request = Map.of("conversation", conversation);
+    public String getDiary(String conversation, String currentDiary) {
+        Map<String, String> request = Map.of(
+                "conversation", conversation,
+                "currentDiary", currentDiary
+        );
 
         return webClient.post()
                 .uri("/chat/diary")

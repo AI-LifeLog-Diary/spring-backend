@@ -19,7 +19,7 @@ public class ChatService {
         boolean isDiaryPresent = currentDiary != null && !currentDiary.isBlank();
 
         if (isDiaryPresent) {
-            String diaryContent = gptService.createDiaryFromConversation(conversation);
+            String diaryContent = gptService.createDiaryFromConversation(conversation, currentDiary);
             return new ChatMessageResDto(null, diaryContent);
         }
 
@@ -28,7 +28,7 @@ public class ChatService {
         }
 
         String followUp = followQuestionService.createFollowUpQuestionFromConversation(conversation);
-        String diaryContent = gptService.createDiaryFromConversation(conversation);
+        String diaryContent = gptService.createDiaryFromConversation(conversation, currentDiary);
 
         return new ChatMessageResDto(followUp, diaryContent);
     }
