@@ -11,7 +11,7 @@ public class GPTService {
 
     private final DiaryChatClient diaryChatClient;
 
-    public String createDiaryFromConversation(String conversation) {
-        return diaryChatClient.getDiary(conversation);
+    public String createDiaryFromConversation(String conversation, String currentDiary) {
+        return diaryChatClient.getDiary(conversation, currentDiary);
     }
 }
