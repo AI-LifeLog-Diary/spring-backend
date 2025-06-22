@@ -72,8 +72,8 @@ public class UserService {
                 throw new GeneralException(Code.USER_NOT_FOUND, "현재 인증된 회원이 존재하지 않습니다.");
             }
 
-            String objectKey = currentUser.getProfileUrl();
-            String presignedUrl = imageService.generatePresignedUrl(objectKey);
+            String profileUrl = currentUser.getProfileUrl();
+            String presignedUrl = imageService.generatePresignedUrlFromFullUrl(profileUrl);
 
             return UserProfileResDto.builder()
                     .userId(currentUser.getId())
