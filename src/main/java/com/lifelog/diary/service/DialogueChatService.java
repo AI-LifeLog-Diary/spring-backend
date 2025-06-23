@@ -369,13 +369,15 @@ public class DialogueChatService {
                     String clean = chunk
                             .replaceFirst("^data:data:", "")
                             .replaceFirst("^data:", "")
-                            .strip();
-                    if (clean.matches("^\\s{2,}.*")) {
-                        clean = " " + clean.trim();
-                    }
+                            .replaceAll("(?<! ) (?! )", "")         // 공백 1개만 제거
+                            .replaceAll(" {2,}", " ");              // 2개 이상 공백 → 1개로
+
                     buffer.append(clean);
+                    System.out.println(buffer);
                     return clean;
                 })
+
+
                 .onErrorResume(e -> {
                     log.error("stream 중 에러 발생", e);
                     return Flux.just("error: 챗봇 응답 도중 오류가 발생했습니다.");
