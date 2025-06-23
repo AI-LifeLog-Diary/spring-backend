@@ -31,8 +31,6 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 
@@ -365,31 +363,16 @@ public class DialogueChatService {
 
     private Flux<String> streamWithNoSession(User user, DialogueChatSession session, AESUtil aesUtil, DialogueChatWithNoSessionReqDto dto) {
         StringBuilder buffer = new StringBuilder();
-        Pattern sentenceEndPattern = Pattern.compile("([.!?…][\"”’]?)\\s+");
 
         return chatClient.streamDialogueWithNoSession(dto)
                 .map(chunk -> {
                     String clean = chunk
                             .replaceFirst("^data:data:", "")
-                            .replaceFirst("^data:", "");
+                            .replaceFirst("^data:", "");            // 2개 이상 공백 → 1개로
 
                     buffer.append(clean);
-                    StringBuilder toSend = new StringBuilder();
-                    Matcher matcher = sentenceEndPattern.matcher(buffer);
-
-                    int lastEnd = 0;
-                    while (matcher.find()) {
-                        int end = matcher.end();
-                        toSend.append(buffer.substring(lastEnd, end));
-                        lastEnd = end;
-                    }
-
-                    // 버퍼에서 보낸 문장은 삭제
-                    if (lastEnd > 0) {
-                        buffer.delete(0, lastEnd);
-                    }
-
-                    return toSend.toString();  // 문장 단위 반환
+                    System.out.println(buffer);
+                    return clean;
                 })
                 .onErrorResume(e -> {
                     log.error("stream 중 에러 발생", e);
