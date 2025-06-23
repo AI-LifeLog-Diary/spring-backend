@@ -368,9 +368,7 @@ public class DialogueChatService {
                 .map(chunk -> {
                     String clean = chunk
                             .replaceFirst("^data:data:", "")
-                            .replaceFirst("^data:", "")
-                            .replaceAll("(?<! ) (?! )", "")         // 공백 1개만 제거
-                            .replaceAll(" {2,}", " ");              // 2개 이상 공백 → 1개로
+                            .replaceFirst("^data:", "");            // 2개 이상 공백 → 1개로
 
                     buffer.append(clean);
                     System.out.println(buffer);
