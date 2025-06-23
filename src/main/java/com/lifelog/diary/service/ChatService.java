@@ -24,7 +24,7 @@ public class ChatService {
         }
 
         if (conversation == null || conversation.isBlank()) {
-            return new ChatMessageResDto("안녕, 오늘은 어떤 일이 있었어?", null);
+            return new ChatMessageResDto("안녕하세요, " + user.getNickname() + "님! " + "오늘은 어떤 일이 있었나요?", null);
         }
 
         String followUp = followQuestionService.createFollowUpQuestionFromConversation(conversation);
