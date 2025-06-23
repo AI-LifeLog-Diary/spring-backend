@@ -368,7 +368,8 @@ public class DialogueChatService {
                 .map(chunk -> {
                     String clean = chunk
                             .replaceFirst("^data:data:", "")
-                            .replaceFirst("^data:", "");
+                            .replaceFirst("^data:", "")
+                            .replaceAll("([.!?])(?=\\S)", "$1 ");
 
                     buffer.append(clean);
                     return clean;
