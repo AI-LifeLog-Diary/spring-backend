@@ -38,16 +38,10 @@ public class DiaryService {
                 });
     }
 
-    public boolean delete(String diaryId, User currentUser) {
+    public boolean delete(String diaryId) {
         Optional<Diary> optionalDiary = diaryRepository.findById(diaryId);
 
         if (optionalDiary.isEmpty()) {
-            return false;
-        }
-
-        Diary diary = optionalDiary.get();
-
-        if (!diary.getUser().getId().equals(currentUser.getId())) {
             return false;
         }
 
