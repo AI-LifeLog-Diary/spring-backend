@@ -2,11 +2,8 @@ package com.lifelog.diary.service;
 
 import com.lifelog.diary.domain.User;
 import com.lifelog.diary.dto.ChatMessageResDto;
-import com.lifelog.diary.dto.DiaryResDto;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
-import reactor.core.publisher.Flux;
-import reactor.core.scheduler.Schedulers;
 
 @Service
 @RequiredArgsConstructor

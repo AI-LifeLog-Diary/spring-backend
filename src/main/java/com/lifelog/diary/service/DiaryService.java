@@ -6,13 +6,11 @@ import com.lifelog.diary.dto.DiaryResDto;
 import com.lifelog.diary.image.service.ImageService;
 import com.lifelog.diary.repository.DiaryRepository;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.Optional;
 
-@Slf4j
 @Service
 @RequiredArgsConstructor
 public class DiaryService {
@@ -50,8 +48,6 @@ public class DiaryService {
         Diary diary = optionalDiary.get();
 
         if (!diary.getUser().getId().equals(currentUser.getId())) {
-            log.info("요청한 사용자: {}", currentUser.getId());
-            log.info("삭제하려는 다이어리의 작성자: {}", diary.getUser().getId());
             return false;
         }
 
